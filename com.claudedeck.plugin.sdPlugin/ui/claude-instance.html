@@ -25,13 +25,13 @@
     }
 
     .sdpi-wrapper {
-      padding: 12px;
+      padding: 8px;
     }
 
     .sdpi-item {
       display: flex;
       flex-direction: column;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .sdpi-item-label {
@@ -47,7 +47,7 @@
     input[type="text"],
     select {
       width: 100%;
-      padding: 8px;
+      padding: 6px;
       border: 1px solid var(--sdpi-bordercolor);
       border-radius: 4px;
       background-color: #1a1a1a;
@@ -65,8 +65,7 @@
       display: flex;
       flex-direction: row;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     input[type="checkbox"] {
@@ -76,11 +75,11 @@
     }
 
     .sdpi-heading {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
-      padding-bottom: 8px;
+      padding-bottom: 6px;
       border-bottom: 1px solid var(--sdpi-bordercolor);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .sdpi-info {
@@ -90,12 +89,12 @@
     }
 
     button {
-      padding: 8px 16px;
+      padding: 5px 10px;
       border: none;
       border-radius: 4px;
       background-color: var(--sdpi-highlight);
       color: white;
-      font-size: 12px;
+      font-size: 11px;
       cursor: pointer;
     }
 
@@ -106,22 +105,22 @@
     /* Health Status Section */
     .health-status {
       display: flex;
-      gap: 16px;
-      margin-bottom: 16px;
-      padding: 10px;
+      gap: 12px;
+      margin-bottom: 10px;
+      padding: 6px 8px;
       background-color: #1a1a1a;
-      border-radius: 6px;
+      border-radius: 4px;
     }
 
     .health-item {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .health-indicator {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background-color: #6b7280;
       transition: background-color 0.3s;
@@ -144,12 +143,12 @@
 
     /* Instance dropdown */
     .instance-select {
-      margin-top: 8px;
+      margin-top: 6px;
     }
 
     #instanceSelect {
       width: 100%;
-      padding: 8px;
+      padding: 6px;
       border: 1px solid var(--sdpi-bordercolor);
       border-radius: 4px;
       background-color: #1a1a1a;
@@ -164,8 +163,8 @@
 
     /* Instance list */
     #instanceList {
-      margin-top: 8px;
-      padding: 8px;
+      margin-top: 6px;
+      padding: 6px;
       background-color: #1a1a1a;
       border-radius: 4px;
       max-height: 150px;
@@ -173,13 +172,13 @@
     }
 
     .instance-item {
-      padding: 8px;
+      padding: 6px;
       border-radius: 4px;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 4px;
+      margin-bottom: 3px;
     }
 
     .instance-item:last-child {
@@ -242,17 +241,10 @@
       align-items: center;
     }
 
-    .socket-path {
-      font-size: 10px;
-      color: #666;
-      margin-top: 4px;
-      word-break: break-all;
-    }
-
     /* Folder picker */
     .folder-input-row {
       display: flex;
-      gap: 8px;
+      gap: 6px;
     }
 
     .folder-input-row input[type="text"] {
@@ -261,7 +253,7 @@
 
     .folder-input-row button {
       flex-shrink: 0;
-      padding: 8px 12px;
+      padding: 5px 10px;
     }
 
     .folder-path-display {
@@ -287,7 +279,6 @@
         <span class="health-label">Kitty</span>
       </div>
     </div>
-    <div class="socket-path" id="kittySocket"></div>
 
     <!-- Instance Name is hidden from UI but still used programmatically for auto-fill from folder name -->
     <input type="hidden" id="instanceName" />
@@ -417,7 +408,6 @@
     function checkHealth() {
       const serverIndicator = document.getElementById("serverStatus");
       const kittyIndicator = document.getElementById("kittyStatus");
-      const kittySocket = document.getElementById("kittySocket");
 
       // Check server health
       fetch("http://127.0.0.1:19847/health")
@@ -433,17 +423,10 @@
       fetch("http://127.0.0.1:19847/kitty-status")
         .then(res => res.json())
         .then(data => {
-          if (data.available) {
-            kittyIndicator.className = "health-indicator online";
-            kittySocket.textContent = data.socketPath || "";
-          } else {
-            kittyIndicator.className = "health-indicator offline";
-            kittySocket.textContent = data.error || "Kitty not available";
-          }
+          kittyIndicator.className = data.available ? "health-indicator online" : "health-indicator offline";
         })
         .catch(() => {
           kittyIndicator.className = "health-indicator offline";
-          kittySocket.textContent = "Could not check Kitty status";
         });
     }
 
