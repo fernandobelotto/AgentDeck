@@ -3,6 +3,13 @@
  * Detects single press, double press, and hold gestures
  */
 
+// Logger function that can be set externally
+let logFn: (message: string) => void = console.log;
+
+export function setInteractionLogger(fn: (message: string) => void): void {
+  logFn = fn;
+}
+
 export enum InteractionType {
   SinglePress = "single",
   DoublePress = "double",
@@ -42,24 +49,31 @@ export class InteractionHandler {
    */
   handleKeyDown(): void {
     const now = Date.now();
+    const timeSinceLastDown = now - this.lastKeyDownTime;
     this.keyDownTime = now;
     this.holdTriggered = false;
 
+    logFn(`[KeyDown] timeSinceLastDown=${timeSinceLastDown}ms`);
+
     // Check for potential double-click
-    if (now - this.lastKeyDownTime < InteractionHandler.DOUBLE_CLICK_THRESHOLD_MS) {
+    if (timeSinceLastDown < InteractionHandler.DOUBLE_CLICK_THRESHOLD_MS) {
       this.clickCount++;
+      logFn(`[KeyDown] Potential double-click, clickCount=${this.clickCount}`);
       // Clear single-click timeout if we're detecting a double-click
       if (this.clickTimeout) {
         clearTimeout(this.clickTimeout);
         this.clickTimeout = null;
+        logFn(`[KeyDown] Cleared pending single-click timeout`);
       }
     } else {
       this.clickCount = 1;
+      logFn(`[KeyDown] New click sequence`);
     }
 
     this.lastKeyDownTime = now;
 
     // Start hold detection timer
+    logFn(`[KeyDown] Starting hold timer (${InteractionHandler.HOLD_THRESHOLD_MS}ms)`);
     this.holdTimeout = setTimeout(() => {
       // Cancel any pending click handlers
       if (this.clickTimeout) {
@@ -68,6 +82,7 @@ export class InteractionHandler {
       }
       this.clickCount = 0;
       this.holdTriggered = true;
+      logFn(`[HOLD] >>> HOLD TRIGGERED <<<`);
       this.callbacks.onHold();
     }, InteractionHandler.HOLD_THRESHOLD_MS);
   }
@@ -78,19 +93,24 @@ export class InteractionHandler {
   handleKeyUp(): void {
     const pressDuration = Date.now() - this.keyDownTime;
 
+    logFn(`[KeyUp] pressDuration=${pressDuration}ms, clickCount=${this.clickCount}, holdTriggered=${this.holdTriggered}`);
+
     // Clear hold timeout since key was released
     if (this.holdTimeout) {
       clearTimeout(this.holdTimeout);
       this.holdTimeout = null;
+      logFn(`[KeyUp] Cleared hold timer`);
     }
 
     // If hold was triggered, don't process as a click
     if (this.holdTriggered) {
+      logFn(`[KeyUp] Hold was triggered, ignoring key up`);
       return;
     }
 
     // If press was long enough to be a hold, it was already handled
     if (pressDuration >= InteractionHandler.HOLD_THRESHOLD_MS) {
+      logFn(`[KeyUp] Press was long enough for hold, ignoring`);
       return;
     }
 
@@ -98,6 +118,7 @@ export class InteractionHandler {
     if (this.clickCount >= 2) {
       // Double-click detected
       this.clickCount = 0;
+      logFn(`[DOUBLE] >>> DOUBLE PRESS TRIGGERED <<<`);
       this.callbacks.onDoublePress();
     } else {
       // Wait to see if another click is coming
@@ -106,8 +127,10 @@ export class InteractionHandler {
         InteractionHandler.CLICK_WAIT_MS - pressDuration
       );
 
+      logFn(`[KeyUp] Waiting ${remainingWait}ms for potential second click`);
       this.clickTimeout = setTimeout(() => {
         if (this.clickCount === 1) {
+          logFn(`[SINGLE] >>> SINGLE PRESS TRIGGERED <<<`);
           this.callbacks.onSinglePress();
         }
         this.clickCount = 0;

@@ -11,7 +11,7 @@ import streamDeck, {
 const logger = streamDeck.logger;
 import { WebSocket } from "ws";
 
-import { InteractionHandler } from "../utils/interaction-handler.js";
+import { InteractionHandler, setInteractionLogger } from "../utils/interaction-handler.js";
 import { AnimationController } from "../icons/animation-controller.js";
 import { focusTerminal, sendCancelSignal, sendApproveSignal, openTerminalWithClaude } from "../utils/terminal-focus.js";
 import type {
@@ -24,6 +24,9 @@ import type {
 
 const WS_URL = "ws://127.0.0.1:19847";
 const WS_RECONNECT_DELAY = 5000;
+
+// Set up interaction handler logging to use Stream Deck logger
+setInteractionLogger((msg) => logger.info(`[Interaction] ${msg}`));
 
 /**
  * Stream Deck action for monitoring and controlling Claude Code instances
@@ -179,7 +182,17 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const projectFolder = settings.projectFolder as string | undefined;
     logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}`);
 
-    // If project folder is configured, always launch new Claude instance there
+    // If session is attached, focus that terminal window
+    if (sessionId) {
+      const instance = this.knownInstances.get(sessionId);
+      const cwd = instance?.metadata?.cwd;
+      logger.info(`Focusing terminal for session: ${sessionId}, cwd: ${cwd}`);
+      focusTerminal(sessionId, cwd);
+      return;
+    }
+
+    // No session attached - launch new Claude instance
+    // Use project folder if configured, otherwise launch without a specific directory
     if (projectFolder) {
       logger.info(`Launching Claude in project folder: ${projectFolder}`);
       const result = await openTerminalWithClaude(projectFolder);
@@ -188,18 +201,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       } else {
         logger.error(`Failed to launch Claude in ${projectFolder}: ${result.error}`);
       }
-      return;
-    }
-
-    // Otherwise use existing behavior
-    if (sessionId) {
-      // Focus existing terminal window using Kitty remote control
-      const instance = this.knownInstances.get(sessionId);
-      const cwd = instance?.metadata?.cwd;
-      logger.info(`Focusing terminal for session: ${sessionId}, cwd: ${cwd}`);
-      focusTerminal(sessionId, cwd);
     } else {
-      // No instance attached - open a new Kitty window with Claude
       logger.info(`No session - launching new Claude window`);
       const result = await openTerminalWithClaude();
       if (result.success) {
@@ -214,12 +216,14 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
    * Handle double press - cancel operation
    */
   private async handleDoublePress(contextId: string): Promise<void> {
+    logger.info(`[Action] handleDoublePress called for context: ${contextId}`);
     const action = this.actionContexts.get(contextId);
     if (!action) return;
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
     if (sessionId) {
+      logger.info(`[Action] Sending cancel signal for session: ${sessionId}`);
       const instance = this.knownInstances.get(sessionId);
       const cwd = instance?.metadata?.cwd;
       this.sendCommand(sessionId, "cancel");
@@ -231,6 +235,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
    * Handle hold - approve permission
    */
   private async handleHold(contextId: string): Promise<void> {
+    logger.info(`[Action] handleHold called for context: ${contextId}`);
     const action = this.actionContexts.get(contextId);
     if (!action) return;
 
@@ -238,12 +243,23 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const sessionId = settings.sessionId as string | undefined;
     const state = sessionId ? this.instanceStates.get(sessionId) : undefined;
 
+    logger.info(`[Action] Hold - sessionId: ${sessionId}, state: ${state}`);
+
     // Only approve if in permission state
     if (sessionId && state === "permission") {
+      logger.info(`[Action] Sending approve signal for session: ${sessionId}`);
       const instance = this.knownInstances.get(sessionId);
       const cwd = instance?.metadata?.cwd;
+      logger.info(`[Action] Instance cwd: ${cwd}`);
       this.sendCommand(sessionId, "approve");
-      sendApproveSignal(sessionId, cwd);
+      try {
+        await sendApproveSignal(sessionId, cwd);
+        logger.info(`[Action] sendApproveSignal completed`);
+      } catch (err) {
+        logger.error(`[Action] sendApproveSignal failed: ${err}`);
+      }
+    } else {
+      logger.info(`[Action] Hold ignored - not in permission state`);
     }
   }
 
@@ -367,6 +383,16 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     } else if (message.type === "update") {
       // Update specific instance state
       this.instanceStates.set(message.sessionId, message.state);
+
+      // Update or create the known instance with metadata
+      const existing = this.knownInstances.get(message.sessionId);
+      this.knownInstances.set(message.sessionId, {
+        sessionId: message.sessionId,
+        state: message.state,
+        metadata: message.metadata,
+        lastUpdate: Date.now(),
+        name: existing?.name
+      });
 
       // Update actions bound to this session
       this.updateBoundActions(message.sessionId, message.state);

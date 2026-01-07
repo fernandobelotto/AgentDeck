@@ -3,6 +3,9 @@
  * Kitty-only implementation using kitten @ remote control API
  */
 
+import streamDeck from "@elgato/streamdeck";
+const logger = streamDeck.logger;
+
 import {
   focusClaudeWindow,
   sendCancelSignal as kittySendCancel,
@@ -57,9 +60,11 @@ export async function sendApproveSignal(
   sessionId: string,
   cwd?: string
 ): Promise<void> {
+  logger.info(`[TerminalFocus] sendApproveSignal called - sessionId: ${sessionId}, cwd: ${cwd}`);
   const success = await kittySendApprove(sessionId, cwd);
+  logger.info(`[TerminalFocus] kittySendApprove result: ${success}`);
   if (!success) {
-    console.warn(`Approve signal failed for session: ${sessionId}`);
+    logger.warn(`[TerminalFocus] Approve signal failed for session: ${sessionId}`);
   }
 }
 

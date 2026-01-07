@@ -279,7 +279,7 @@ export async function focusWindow(
 }
 
 /**
- * Send text/keys to a window
+ * Send text to a window
  * Uses: kitten @ --to <socket> send-text --match <match> <text>
  */
 export async function sendText(
@@ -300,6 +300,35 @@ export async function sendText(
 
   try {
     await execKittenCommand("send-text", args, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Send a key press to a window
+ * Uses: kitten @ --to <socket> send-key --match <match> <key>
+ * This is better for TUI apps that need actual key events, not text input
+ */
+export async function sendKey(
+  key: string,
+  match?: KittyWindowMatch,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  const args: string[] = [];
+
+  if (match) {
+    const matchString = buildMatchString(match);
+    if (matchString) {
+      args.push("--match", matchString);
+    }
+  }
+
+  args.push(key);
+
+  try {
+    await execKittenCommand("send-key", args, options);
     return true;
   } catch {
     return false;
@@ -380,9 +409,9 @@ function buildMatchString(match: KittyWindowMatch): string | null {
 /**
  * Find a Kitty window that matches a Claude Code instance
  * Matching priority:
- * 1. CWD match (most reliable)
- * 2. Title containing "Claude:[sessionId]"
- * 3. Cmdline containing "claude"
+ * 1. Title containing "Claude:[sessionId]" (most reliable - set by hooks)
+ * 2. CWD match (fallback)
+ * 3. Cmdline containing "claude" (last resort)
  */
 export async function findClaudeWindow(
   sessionId?: string,
@@ -411,7 +440,19 @@ export async function findClaudeWindow(
     return null;
   }
 
-  // Priority 1: Match by CWD (most reliable)
+  // Priority 1: Match by title containing "Claude:[sessionId]" (most reliable)
+  // The hooks set window titles with format "Claude:[session]:project - state"
+  if (sessionId) {
+    const shortSession = sessionId.substring(0, 8);
+    const titleMatch = allWindows.find(w =>
+      w.title.includes(`Claude:${shortSession}`)
+    );
+    if (titleMatch) {
+      return titleMatch;
+    }
+  }
+
+  // Priority 2: Match by CWD (fallback when title doesn't match)
   if (cwd) {
     const normalizedCwd = cwd.replace(/\/+$/, ""); // Remove trailing slash
     const cwdMatch = allWindows.find(w => {
@@ -423,18 +464,7 @@ export async function findClaudeWindow(
     }
   }
 
-  // Priority 2: Match by title containing "Claude:[sessionId]"
-  if (sessionId) {
-    const shortSession = sessionId.substring(0, 8);
-    const titleMatch = allWindows.find(w =>
-      w.title.includes(`Claude:${shortSession}`)
-    );
-    if (titleMatch) {
-      return titleMatch;
-    }
-  }
-
-  // Priority 3: Match by cmdline containing "claude"
+  // Priority 3: Match by cmdline containing "claude" (last resort)
   const cmdlineMatch = allWindows.find(w =>
     w.cmdline.some(arg => arg.toLowerCase().includes("claude"))
   );
@@ -463,6 +493,7 @@ export async function focusClaudeWindow(
 
 /**
  * Send Enter key (approve signal)
+ * Uses send-key for better TUI app compatibility
  */
 export async function sendApproveSignal(
   sessionId?: string,
@@ -471,15 +502,15 @@ export async function sendApproveSignal(
 ): Promise<boolean> {
   const window = await findClaudeWindow(sessionId, cwd, options);
   if (!window) {
-    console.warn(`Approve signal failed: Could not find window for session ${sessionId}`);
     return false;
   }
-  return sendText("\n", { id: window.id }, options);
+  // Use send-key instead of send-text for TUI apps like Claude Code
+  return sendKey("enter", { id: window.id }, options);
 }
 
 /**
  * Send Ctrl+C (cancel signal)
- * Note: \x03 is the ASCII code for Ctrl+C (ETX - End of Text)
+ * Uses send-key for better TUI app compatibility
  */
 export async function sendCancelSignal(
   sessionId?: string,
@@ -488,10 +519,10 @@ export async function sendCancelSignal(
 ): Promise<boolean> {
   const window = await findClaudeWindow(sessionId, cwd, options);
   if (!window) {
-    console.warn(`Cancel signal failed: Could not find window for session ${sessionId}`);
     return false;
   }
-  return sendText("\x03", { id: window.id }, options);
+  // Use send-key ctrl+c for TUI apps
+  return sendKey("ctrl+c", { id: window.id }, options);
 }
 
 /** Last error from launchClaudeWindow for debugging */
