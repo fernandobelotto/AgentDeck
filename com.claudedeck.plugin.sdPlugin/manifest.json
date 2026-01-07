@@ -1,0 +1,44 @@
+{
+  "Name": "ClaudeDeck",
+  "Version": "1.0.0.0",
+  "Author": "ClaudeDeck",
+  "Actions": [
+    {
+      "Name": "Claude Instance",
+      "UUID": "com.claudedeck.plugin.claude-instance",
+      "Icon": "imgs/action",
+      "Tooltip": "Monitor and control a Claude Code instance",
+      "PropertyInspectorPath": "ui/claude-instance.html",
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "imgs/action"
+        }
+      ]
+    }
+  ],
+  "Category": "ClaudeDeck",
+  "CategoryIcon": "imgs/category",
+  "CodePath": "bin/plugin.js",
+  "Description": "Monitor and control Claude Code instances from your Stream Deck",
+  "Icon": "imgs/plugin",
+  "SDKVersion": 2,
+  "Software": {
+    "MinimumVersion": "6.4"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "10.15"
+    },
+    {
+      "Platform": "windows",
+      "MinimumVersion": "10"
+    }
+  ],
+  "Nodejs": {
+    "Version": "20",
+    "Debug": "enabled"
+  },
+  "UUID": "com.claudedeck.plugin"
+}

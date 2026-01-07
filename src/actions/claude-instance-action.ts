@@ -36,7 +36,7 @@ const WS_RECONNECT_DELAY = 5000;
  */
 export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings> {
   /** Action UUID from manifest */
-  override readonly manifestId = "com.claudedeck.claude-instance";
+  override readonly manifestId = "com.claudedeck.plugin.claude-instance";
 
   /** WebSocket connection to status server */
   private wsConnection: WebSocket | null = null;
