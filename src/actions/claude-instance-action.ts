@@ -413,7 +413,15 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
       // Update all actions
       this.updateAllActions();
+
+      // Try auto-assign for each existing instance on init
+      for (const instance of message.instances) {
+        this.tryAutoAssign(instance.sessionId, instance.metadata?.cwd);
+      }
     } else if (message.type === "update") {
+      // Check if this is a NEW instance (not previously tracked)
+      const isNewInstance = !this.knownInstances.has(message.sessionId);
+
       // Update specific instance state
       this.instanceStates.set(message.sessionId, message.state);
 
@@ -429,7 +437,100 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
       // Update actions bound to this session
       this.updateBoundActions(message.sessionId, message.state);
+
+      // Try auto-assign only for NEW instances
+      if (isNewInstance) {
+        this.tryAutoAssign(message.sessionId, message.metadata?.cwd);
+      }
     }
+  }
+
+  /**
+   * Try to auto-assign a new instance to an unbound action with autoAssign enabled.
+   * Priority: actions with matching projectFolder first, then actions without projectFolder.
+   */
+  private async tryAutoAssign(sessionId: string, instanceCwd?: string): Promise<void> {
+    logger.info(`[AutoAssign] Checking auto-assign for session: ${sessionId}, cwd: ${instanceCwd}`);
+
+    // Collect all actions with autoAssign enabled and no sessionId
+    const eligibleActions: { action: Action<ClaudeInstanceSettings>; settings: ClaudeInstanceSettings; hasFolder: boolean }[] = [];
+
+    for (const action of this.actions) {
+      const settings = await action.getSettings<ClaudeInstanceSettings>();
+
+      // Skip if autoAssign is not enabled or already has a session
+      if (!settings.autoAssign || settings.sessionId) {
+        continue;
+      }
+
+      eligibleActions.push({
+        action,
+        settings,
+        hasFolder: !!settings.projectFolder
+      });
+    }
+
+    if (eligibleActions.length === 0) {
+      logger.info(`[AutoAssign] No eligible actions found`);
+      return;
+    }
+
+    // Normalize paths for comparison (remove trailing slashes)
+    const normalizePath = (p: string) => p.replace(/\/+$/, "");
+    const normalizedInstanceCwd = instanceCwd ? normalizePath(instanceCwd) : undefined;
+
+    // First pass: find action with matching projectFolder
+    for (const { action, settings } of eligibleActions) {
+      if (!settings.projectFolder) continue;
+
+      const normalizedProjectFolder = normalizePath(settings.projectFolder);
+      if (normalizedInstanceCwd && normalizedProjectFolder === normalizedInstanceCwd) {
+        logger.info(`[AutoAssign] Matched by projectFolder: ${normalizedProjectFolder}`);
+        await this.assignInstanceToAction(action, sessionId, settings, instanceCwd);
+        return;
+      }
+    }
+
+    // Second pass: find action without projectFolder (takes any instance)
+    for (const { action, settings } of eligibleActions) {
+      if (settings.projectFolder) continue;
+
+      logger.info(`[AutoAssign] Assigning to action without projectFolder restriction`);
+      await this.assignInstanceToAction(action, sessionId, settings, instanceCwd);
+      return;
+    }
+
+    logger.info(`[AutoAssign] No matching action found for session ${sessionId}`);
+  }
+
+  /**
+   * Assign an instance to an action and update its settings
+   */
+  private async assignInstanceToAction(
+    action: Action<ClaudeInstanceSettings>,
+    sessionId: string,
+    currentSettings: ClaudeInstanceSettings,
+    instanceCwd?: string
+  ): Promise<void> {
+    const newSettings: ClaudeInstanceSettings = {
+      ...currentSettings,
+      sessionId: sessionId
+    };
+
+    // Auto-fill instance name from cwd if not already set
+    if (!newSettings.instanceName && instanceCwd) {
+      const folderName = instanceCwd.split("/").pop();
+      if (folderName) {
+        newSettings.instanceName = folderName;
+      }
+    }
+
+    logger.info(`[AutoAssign] Assigning session ${sessionId} to action ${action.id}`);
+    await action.setSettings(newSettings);
+
+    // Update display with the new state
+    const state = this.instanceStates.get(sessionId) ?? "idle";
+    this.updateDisplay(action, state, newSettings);
   }
 
   /**
