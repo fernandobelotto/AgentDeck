@@ -1,0 +1,16 @@
+2026-01-07T13:47:20.098Z ERROR Process encountered uncaught exception 
+/Users/fernandobosco/Projects/fernandobelotto/ClaudeDeck/com.claudedeck.plugin.sdPlugin/bin/plugin.js:6508
+        throw new Error("Failed to read manifest.json as the file does not exist.");
+        ^
+
+Error: Failed to read manifest.json as the file does not exist.
+    at readManifest (/Users/fernandobosco/Projects/fernandobelotto/ClaudeDeck/com.claudedeck.plugin.sdPlugin/bin/plugin.js:6508:15)
+    at getManifest (/Users/fernandobosco/Projects/fernandobelotto/ClaudeDeck/com.claudedeck.plugin.sdPlugin/bin/plugin.js:6499:28)
+    at get manifest (/Users/fernandobosco/Projects/fernandobelotto/ClaudeDeck/com.claudedeck.plugin.sdPlugin/bin/plugin.js:8168:16)
+    at Object.<anonymous> (/Users/fernandobosco/Projects/fernandobelotto/ClaudeDeck/com.claudedeck.plugin.sdPlugin/bin/plugin.js:8210:16)
+    at Module._compile (node:internal/modules/cjs/loader:1554:14)
+    at Object..js (node:internal/modules/cjs/loader:1706:10)
+    at Module.load (node:internal/modules/cjs/loader:1289:32)
+    at Function._load (node:internal/modules/cjs/loader:1108:12)
+    at TracingChannel.traceSync (node:diagnostics_channel:322:14)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:220:24)
