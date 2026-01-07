@@ -9,7 +9,8 @@
     "watch": "rollup -c -w",
     "link": "streamdeck link com.claudedeck.plugin.sdPlugin",
     "restart": "streamdeck restart com.claudedeck.plugin",
-    "preview": "open preview.html"
+    "preview": "open preview.html",
+    "icons": "node scripts/generate-icons.js"
   },
   "keywords": [
     "streamdeck",
@@ -30,6 +31,7 @@
     "@types/node": "^22.10.5",
     "@types/ws": "^8.5.13",
     "rollup": "^4.29.2",
+    "sharp": "^0.34.5",
     "tslib": "^2.8.1",
     "typescript": "^5.7.3"
   }
