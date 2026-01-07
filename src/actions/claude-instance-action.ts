@@ -14,6 +14,7 @@ import { WebSocket } from "ws";
 import { InteractionHandler, setInteractionLogger } from "../utils/interaction-handler.js";
 import { AnimationController } from "../icons/animation-controller.js";
 import { focusTerminal, sendCancelSignal, sendApproveSignal, openTerminalWithClaude } from "../utils/terminal-focus.js";
+import { isKittyAvailable, launchKittyWithRemoteControl } from "../utils/kitty-remote.js";
 import type {
   ClaudeInstanceSettings,
   ClaudeState,
@@ -24,6 +25,7 @@ import type {
 
 const WS_URL = "ws://127.0.0.1:19847";
 const WS_RECONNECT_DELAY = 5000;
+const KITTY_POLL_INTERVAL = 5000; // Poll Kitty status every 5 seconds
 
 // Set up interaction handler logging to use Stream Deck logger
 setInteractionLogger((msg) => logger.info(`[Interaction] ${msg}`));
@@ -65,6 +67,12 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /** Action references by context ID for fetching fresh settings */
   private actionContexts: Map<string, Action<ClaudeInstanceSettings>> = new Map();
 
+  /** Kitty status polling timer */
+  private kittyPollTimer: NodeJS.Timeout | null = null;
+
+  /** Current Kitty availability status */
+  private kittyAvailable: boolean = false;
+
   /**
    * Called when an action instance appears on the Stream Deck
    */
@@ -96,6 +104,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
     // Connect to status server if not connected
     this.ensureWebSocketConnection();
+
+    // Start Kitty status polling if not already running
+    this.startKittyPolling();
 
     // Set initial display
     const sessionId = settings.sessionId as string | undefined;
@@ -129,9 +140,10 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       this.animationControllers.delete(contextId);
     }
 
-    // Close WebSocket if no more actions
+    // Close WebSocket and stop polling if no more actions
     if (this.animationControllers.size === 0) {
       this.closeWebSocket();
+      this.stopKittyPolling();
     }
   }
 
@@ -167,7 +179,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   }
 
   /**
-   * Handle single press - focus terminal or launch new Claude instance
+   * Handle single press - focus terminal, launch Kitty, or launch new Claude instance
    */
   private async handleSinglePress(contextId: string): Promise<void> {
     logger.info(`Single press on context: ${contextId}`);
@@ -180,7 +192,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
     const projectFolder = settings.projectFolder as string | undefined;
-    logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}`);
+    logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}, Kitty available: ${this.kittyAvailable}`);
 
     // If session is attached, focus that terminal window
     if (sessionId) {
@@ -191,7 +203,28 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       return;
     }
 
-    // No session attached - launch new Claude instance
+    // No session attached - check if Kitty is available first
+    if (!this.kittyAvailable) {
+      // Launch Kitty with remote control enabled
+      logger.info(`Kitty not available - launching Kitty with remote control`);
+      const result = await launchKittyWithRemoteControl(projectFolder);
+      if (result.success) {
+        logger.info(`Launched Kitty with remote control enabled`);
+        // Poll immediately to update the status, with retry
+        await this.pollKittyStatus();
+        // If still not available, try again after a short delay
+        if (!this.kittyAvailable) {
+          logger.info(`Kitty not detected yet, retrying in 1 second...`);
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          await this.pollKittyStatus();
+        }
+      } else {
+        logger.error(`Failed to launch Kitty: ${result.error}`);
+      }
+      return;
+    }
+
+    // Kitty is available - launch new Claude instance
     // Use project folder if configured, otherwise launch without a specific directory
     if (projectFolder) {
       logger.info(`Launching Claude in project folder: ${projectFolder}`);
@@ -436,6 +469,50 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         command
       };
       this.wsConnection.send(JSON.stringify(message));
+    }
+  }
+
+  /**
+   * Start polling Kitty availability status
+   */
+  private startKittyPolling(): void {
+    if (this.kittyPollTimer) {
+      return; // Already polling
+    }
+
+    // Poll immediately on start
+    this.pollKittyStatus();
+
+    // Set up periodic polling
+    this.kittyPollTimer = setInterval(() => {
+      this.pollKittyStatus();
+    }, KITTY_POLL_INTERVAL);
+  }
+
+  /**
+   * Stop polling Kitty availability status
+   */
+  private stopKittyPolling(): void {
+    if (this.kittyPollTimer) {
+      clearInterval(this.kittyPollTimer);
+      this.kittyPollTimer = null;
+    }
+  }
+
+  /**
+   * Poll Kitty availability and update all animation controllers
+   */
+  private async pollKittyStatus(): Promise<void> {
+    const available = await isKittyAvailable();
+
+    if (this.kittyAvailable !== available) {
+      logger.info(`Kitty availability changed: ${this.kittyAvailable} -> ${available}`);
+      this.kittyAvailable = available;
+
+      // Update all animation controllers with new Kitty status
+      for (const animController of this.animationControllers.values()) {
+        animController.setKittyAvailable(available);
+      }
     }
   }
 

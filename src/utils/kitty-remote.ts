@@ -560,6 +560,57 @@ export async function sendCancelSignal(
 /** Last error from launchClaudeWindow for debugging */
 export let lastLaunchError: string | null = null;
 
+/** Default socket path for launching Kitty with remote control */
+const DEFAULT_KITTY_SOCKET = "unix:/tmp/kitty";
+
+/**
+ * Launch Kitty terminal with remote control enabled
+ * This starts Kitty itself (not a window in an existing instance)
+ * with --listen-on flag for remote control
+ */
+export async function launchKittyWithRemoteControl(
+  cwd?: string
+): Promise<{ success: boolean; error?: string }> {
+  const kittyBin = getKittyBinary("kitty");
+
+  // Check if the binary exists
+  if (!existsSync(kittyBin)) {
+    return {
+      success: false,
+      error: `Kitty binary not found at ${kittyBin}`
+    };
+  }
+
+  try {
+    const args: string[] = [
+      "--listen-on", DEFAULT_KITTY_SOCKET,  // Full unix:/tmp/kitty format required
+      "--single-instance"
+    ];
+
+    if (cwd) {
+      args.push("--directory", cwd);
+    }
+
+    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")} &`;
+
+    await execAsync(cmd, { timeout: 5000 });
+
+    // Give Kitty more time to start and create the socket
+    // 500ms was often not enough for Kitty to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Clear socket cache so we discover the new socket
+    clearSocketCache();
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: `Failed to launch Kitty: ${error}`
+    };
+  }
+}
+
 /**
  * Launch a new Claude Code instance in Kitty
  * First tries remote control, falls back to launching Kitty directly

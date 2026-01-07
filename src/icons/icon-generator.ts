@@ -149,6 +149,12 @@ const LUCIDE_ICONS: Record<string, string> = {
           transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
 };
 
+// Kitty status indicator colors
+const KITTY_STATUS = {
+  available: "#4ADE80",   // Green - Kitty is available
+  unavailable: "#F87171"  // Red - Kitty is not available
+};
+
 /**
  * Generates dynamic SVG icons with particle animations for Claude Code states
  */
@@ -313,8 +319,11 @@ export class IconGenerator {
 
   /**
    * Generate an SVG frame for a given state
+   * @param state - The Claude state to render
+   * @param frame - Animation frame number (default 0)
+   * @param kittyAvailable - Whether Kitty remote control is available (shows green/red indicator)
    */
-  static generateFrame(state: ClaudeState, frame: number = 0): string {
+  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean): string {
     const config = STATE_CONFIGS[state];
     const iconPath = LUCIDE_ICONS[config.icon] || LUCIDE_ICONS.check;
 
@@ -329,6 +338,14 @@ export class IconGenerator {
     // Ambient glow for all states
     const ambientGlow = config.animationType === 'none'
       ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>`
+      : '';
+
+    // Kitty status indicator (bottom-left corner) - only show if kittyAvailable is defined
+    const kittyIndicator = kittyAvailable !== undefined
+      ? `<!-- Kitty status indicator -->
+  <circle cx="26" cy="122" r="8" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}" opacity="0.9"/>
+  <circle cx="26" cy="122" r="5" fill="${ANTHROPIC.black}"/>
+  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`
       : '';
 
     return `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
@@ -368,6 +385,8 @@ export class IconGenerator {
   <circle cx="118" cy="22" r="10" fill="${config.primaryColor}" opacity="0.9"/>
   <circle cx="118" cy="22" r="6" fill="${ANTHROPIC.black}"/>
   <circle cx="118" cy="22" r="4" fill="${config.primaryColor}"/>
+
+  ${kittyIndicator}
 </svg>`;
   }
 
@@ -401,9 +420,12 @@ export class IconGenerator {
 
   /**
    * Generate an SVG as a data URL for use with setImage
+   * @param state - The Claude state to render
+   * @param frame - Animation frame number (default 0)
+   * @param kittyAvailable - Whether Kitty remote control is available
    */
-  static generateDataUrl(state: ClaudeState, frame: number = 0): string {
-    const svg = this.generateFrame(state, frame);
+  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean): string {
+    const svg = this.generateFrame(state, frame, kittyAvailable);
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
 }

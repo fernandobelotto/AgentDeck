@@ -12,6 +12,7 @@ export class AnimationController {
   private intervalId: NodeJS.Timeout | null = null;
   private onFrameUpdate: FrameUpdateCallback;
   private isRunning: boolean = false;
+  private kittyAvailable: boolean | undefined = undefined;
 
   /** Animation frame rate (frames per second) - 12 FPS for smooth, calm animations */
   private static readonly FPS = 12;
@@ -20,6 +21,26 @@ export class AnimationController {
 
   constructor(onFrameUpdate: FrameUpdateCallback) {
     this.onFrameUpdate = onFrameUpdate;
+  }
+
+  /**
+   * Set Kitty availability status and update display
+   */
+  setKittyAvailable(available: boolean): void {
+    if (this.kittyAvailable === available) {
+      return;
+    }
+
+    this.kittyAvailable = available;
+    // Force a frame update to show the new Kitty status
+    this.updateFrame();
+  }
+
+  /**
+   * Get current Kitty availability status
+   */
+  isKittyAvailable(): boolean | undefined {
+    return this.kittyAvailable;
   }
 
   /**
@@ -92,7 +113,7 @@ export class AnimationController {
    * Update the current frame
    */
   private updateFrame(): void {
-    const dataUrl = IconGenerator.generateDataUrl(this.currentState, this.currentFrame);
+    const dataUrl = IconGenerator.generateDataUrl(this.currentState, this.currentFrame, this.kittyAvailable);
     this.onFrameUpdate(dataUrl);
   }
 

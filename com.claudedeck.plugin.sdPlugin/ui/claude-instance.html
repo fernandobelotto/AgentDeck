@@ -455,8 +455,10 @@
         });
     }
 
-    function refreshInstances() {
-      fetch("http://127.0.0.1:19847/instances")
+    function refreshInstances(forceCleanup = false) {
+      // Use cleanup and dedupe params when manually refreshing
+      const params = forceCleanup ? "?cleanup=true&dedupe=true" : "?dedupe=true";
+      fetch("http://127.0.0.1:19847/instances" + params)
         .then(res => res.json())
         .then(instances => {
           const list = document.getElementById("instanceList");
@@ -504,7 +506,7 @@
     document.getElementById("autoAssign").addEventListener("change", saveSettings);
     document.getElementById("projectFolder").addEventListener("change", saveSettings);
     document.getElementById("browseFolder").addEventListener("click", browseFolder);
-    document.getElementById("refreshInstances").addEventListener("click", refreshInstances);
+    document.getElementById("refreshInstances").addEventListener("click", () => refreshInstances(true));
   </script>
 </body>
 </html>

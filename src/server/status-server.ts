@@ -51,7 +51,7 @@ export class StatusServer {
 
       if (req.method === "POST" && req.url === "/status") {
         this.handleStatusPost(req, res);
-      } else if (req.method === "GET" && req.url === "/instances") {
+      } else if (req.method === "GET" && (req.url === "/instances" || req.url?.startsWith("/instances?"))) {
         this.handleGetInstances(req, res);
       } else if (req.method === "GET" && req.url === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" });
@@ -106,9 +106,24 @@ export class StatusServer {
     });
   }
 
-  private handleGetInstances(_req: http.IncomingMessage, res: http.ServerResponse): void {
+  private handleGetInstances(req: http.IncomingMessage, res: http.ServerResponse): void {
+    // Parse query parameters
+    const url = new URL(req.url || "/instances", "http://127.0.0.1");
+    const cleanup = url.searchParams.get("cleanup") === "true";
+    const dedupe = url.searchParams.get("dedupe") === "true";
+
+    // Run cleanup if requested (removes instances inactive for 30+ seconds)
+    if (cleanup) {
+      this.instanceManager.forceCleanupStale(30000);
+    }
+
+    // Deduplicate by CWD if requested (keeps only the most recent per folder)
+    if (dedupe) {
+      this.instanceManager.deduplicateByCwd();
+    }
+
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(this.instanceManager.getAllInstances()));
+    res.end(JSON.stringify(this.instanceManager.getAvailableInstances()));
   }
 
   private async handleKittyStatus(res: http.ServerResponse): Promise<void> {

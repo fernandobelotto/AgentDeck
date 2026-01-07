@@ -154,6 +154,57 @@ export class InstanceManager {
   }
 
   /**
+   * Force cleanup of stale instances with a shorter threshold
+   * Used when explicitly refreshing the instance list
+   * @param thresholdMs - Time threshold in ms (default 30 seconds)
+   * @returns Number of instances removed
+   */
+  forceCleanupStale(thresholdMs: number = 30000): number {
+    const now = Date.now();
+    let removed = 0;
+    for (const [sessionId, instance] of this.instances) {
+      if (now - instance.lastUpdate > thresholdMs) {
+        this.instances.delete(sessionId);
+        removed++;
+      }
+    }
+    return removed;
+  }
+
+  /**
+   * Deduplicate instances by CWD, keeping only the most recently updated one
+   * This handles cases where multiple sessions exist for the same project folder
+   * @returns Number of duplicates removed
+   */
+  deduplicateByCwd(): number {
+    const byCwd = new Map<string, { sessionId: string; lastUpdate: number }>();
+    const toRemove: string[] = [];
+
+    // Find the most recent instance for each CWD
+    for (const [sessionId, instance] of this.instances) {
+      const cwd = instance.metadata?.cwd;
+      if (!cwd) continue;
+
+      const existing = byCwd.get(cwd);
+      if (!existing || instance.lastUpdate > existing.lastUpdate) {
+        if (existing) {
+          toRemove.push(existing.sessionId);
+        }
+        byCwd.set(cwd, { sessionId, lastUpdate: instance.lastUpdate });
+      } else {
+        toRemove.push(sessionId);
+      }
+    }
+
+    // Remove duplicates
+    for (const sessionId of toRemove) {
+      this.instances.delete(sessionId);
+    }
+
+    return toRemove.length;
+  }
+
+  /**
    * Stop the cleanup interval
    */
   destroy(): void {
