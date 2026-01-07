@@ -176,8 +176,22 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
-    logger.info(`Session ID: ${sessionId || "none"}`);
+    const projectFolder = settings.projectFolder as string | undefined;
+    logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}`);
 
+    // If project folder is configured, always launch new Claude instance there
+    if (projectFolder) {
+      logger.info(`Launching Claude in project folder: ${projectFolder}`);
+      const result = await openTerminalWithClaude(projectFolder);
+      if (result.success) {
+        logger.info(`Launched Claude in ${projectFolder}, windowId: ${result.windowId}`);
+      } else {
+        logger.error(`Failed to launch Claude in ${projectFolder}: ${result.error}`);
+      }
+      return;
+    }
+
+    // Otherwise use existing behavior
     if (sessionId) {
       // Focus existing terminal window using Kitty remote control
       const instance = this.knownInstances.get(sessionId);

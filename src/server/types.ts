@@ -92,6 +92,7 @@ export interface ClaudeInstanceSettings {
   sessionId?: string;
   instanceName?: string;
   autoAssign?: boolean;
+  projectFolder?: string;
   [key: string]: string | boolean | number | null | undefined;
 }
 

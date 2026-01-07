@@ -2,6 +2,7 @@ import http from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import { InstanceManager } from "./instance-manager.js";
 import { isKittyAvailable, getKittySocketPath } from "../utils/kitty-remote.js";
+import { pickFolder } from "../utils/folder-picker.js";
 import type {
   StatusUpdate,
   WebSocketMessage,
@@ -57,6 +58,8 @@ export class StatusServer {
         res.end(JSON.stringify({ status: "ok", instances: this.instanceManager.getAllInstances().length }));
       } else if (req.method === "GET" && req.url === "/kitty-status") {
         this.handleKittyStatus(res);
+      } else if (req.method === "POST" && req.url === "/pick-folder") {
+        this.handlePickFolder(res);
       } else {
         res.writeHead(404);
         res.end("Not Found");
@@ -117,6 +120,21 @@ export class StatusServer {
     } catch (error) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ available: false, error: String(error) }));
+    }
+  }
+
+  private async handlePickFolder(res: http.ServerResponse): Promise<void> {
+    try {
+      const folderPath = await pickFolder();
+      res.writeHead(200, { "Content-Type": "application/json" });
+      if (folderPath) {
+        res.end(JSON.stringify({ success: true, path: folderPath }));
+      } else {
+        res.end(JSON.stringify({ success: false, cancelled: true }));
+      }
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, error: String(error) }));
     }
   }
 

@@ -246,6 +246,28 @@
       margin-top: 4px;
       word-break: break-all;
     }
+
+    /* Folder picker */
+    .folder-input-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .folder-input-row input[type="text"] {
+      flex: 1;
+    }
+
+    .folder-input-row button {
+      flex-shrink: 0;
+      padding: 8px 12px;
+    }
+
+    .folder-path-display {
+      font-size: 10px;
+      color: #888;
+      margin-top: 4px;
+      word-break: break-all;
+    }
   </style>
 </head>
 <body>
@@ -283,6 +305,15 @@
     <div class="sdpi-item sdpi-item-checkbox">
       <input type="checkbox" id="autoAssign" />
       <label for="autoAssign">Auto-assign next available instance</label>
+    </div>
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Project Folder</div>
+      <div class="sdpi-item-value folder-input-row">
+        <input type="text" id="projectFolder" placeholder="/path/to/project" />
+        <button id="browseFolder">Browse</button>
+      </div>
+      <div class="sdpi-info">When set, pressing the button launches Claude Code in this folder</div>
     </div>
 
     <div class="sdpi-item">
@@ -346,12 +377,14 @@
       document.getElementById("instanceName").value = settings.instanceName || "";
       document.getElementById("sessionId").value = settings.sessionId || "";
       document.getElementById("autoAssign").checked = settings.autoAssign || false;
+      document.getElementById("projectFolder").value = settings.projectFolder || "";
     }
 
     function saveSettings() {
       settings.instanceName = document.getElementById("instanceName").value;
       settings.sessionId = document.getElementById("sessionId").value;
       settings.autoAssign = document.getElementById("autoAssign").checked;
+      settings.projectFolder = document.getElementById("projectFolder").value;
 
       if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify({
@@ -360,6 +393,33 @@
           payload: settings
         }));
       }
+    }
+
+    function browseFolder() {
+      const browseBtn = document.getElementById("browseFolder");
+      browseBtn.disabled = true;
+      browseBtn.textContent = "...";
+
+      fetch("http://127.0.0.1:19847/pick-folder", { method: "POST" })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.path) {
+            document.getElementById("projectFolder").value = data.path;
+            // Auto-fill instance name from folder name if empty
+            if (!document.getElementById("instanceName").value) {
+              const folderName = data.path.split("/").pop();
+              document.getElementById("instanceName").value = folderName;
+            }
+            saveSettings();
+          }
+        })
+        .catch(err => {
+          console.error("Failed to open folder picker:", err);
+        })
+        .finally(() => {
+          browseBtn.disabled = false;
+          browseBtn.textContent = "Browse";
+        });
     }
 
     function checkHealth() {
@@ -442,6 +502,8 @@
 
     document.getElementById("instanceName").addEventListener("change", saveSettings);
     document.getElementById("autoAssign").addEventListener("change", saveSettings);
+    document.getElementById("projectFolder").addEventListener("change", saveSettings);
+    document.getElementById("browseFolder").addEventListener("click", browseFolder);
     document.getElementById("refreshInstances").addEventListener("click", refreshInstances);
   </script>
 </body>

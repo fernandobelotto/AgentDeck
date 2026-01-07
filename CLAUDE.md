@@ -8,11 +8,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm install          # Install dependencies
 npm run build        # Build plugin with Rollup
 npm run watch        # Watch mode with auto-rebuild
+npm run preview      # Open icon preview tool in browser
 ```
 
-After building, link the plugin to Stream Deck:
+Stream Deck CLI commands:
 ```bash
-streamdeck link com.claudedeck.plugin.sdPlugin
+streamdeck link com.claudedeck.plugin.sdPlugin      # Link plugin to Stream Deck
+streamdeck restart com.claudedeck.plugin            # Restart plugin after changes
+streamdeck validate com.claudedeck.plugin.sdPlugin  # Validate manifest.json
 ```
 
 ## Architecture
@@ -45,7 +48,10 @@ Claude Code ──(hooks)──> Status Server ──(WebSocket)──> Stream D
 - `icon-generator.ts` - Generates SVG icons for each state
 - `animation-controller.ts` - Controls frame-based animations at 10 FPS
 
-**Terminal Utilities** (`src/utils/terminal-focus.ts`): AppleScript/PowerShell commands for focusing terminals and sending signals.
+**Terminal Utilities** (`src/utils/`):
+- `terminal-focus.ts` - AppleScript/PowerShell commands for focusing terminals
+- `kitty-remote.ts` - Kitty terminal remote control via `kitten @` commands
+- `interaction-handler.ts` - Gesture detection (single press, double press, hold)
 
 ### State Types
 
@@ -78,3 +84,21 @@ The `hooks/status-reporter.sh` script reports Claude Code state to the status se
 ## Configuration
 
 Users must add hooks to `~/.claude/settings.json` pointing to `~/.claudedeck/hooks/status-reporter.sh`. See README.md for the full hooks JSON template.
+
+## Testing
+
+Test hook script manually:
+```bash
+echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.claudedeck/hooks/status-reporter.sh
+```
+
+Check server health:
+```bash
+curl http://127.0.0.1:19847/health
+curl http://127.0.0.1:19847/instances
+```
+
+Test Kitty remote control:
+```bash
+kitten @ ls  # Should return JSON with window info
+```
