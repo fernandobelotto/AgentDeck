@@ -14,14 +14,59 @@ export class InstanceManager {
   }
 
   /**
+   * States that require user action and should not be overwritten by idle/running states
+   * These are "sticky" states that persist until explicitly cleared by user action
+   */
+  private static readonly STICKY_STATES: Set<ClaudeState> = new Set([
+    "permission",
+    "question"
+  ]);
+
+  /**
+   * States that should NOT override sticky states
+   * These typically fire when Claude finishes output but user hasn't responded yet
+   */
+  private static readonly NON_OVERRIDING_STATES: Set<ClaudeState> = new Set([
+    "idle",
+    "running"
+  ]);
+
+  /**
+   * Hook events that indicate actual progress and should clear sticky states
+   * These mean Claude has moved on past the permission/question state
+   */
+  private static readonly PROGRESS_HOOK_EVENTS: Set<string> = new Set([
+    "PreToolUse",    // Claude is starting a new tool (after approval)
+    "PostToolUse",   // A tool finished executing
+    "Stop",          // Claude finished processing
+    "SessionEnd"     // Session ended
+  ]);
+
+  /**
    * Update or create an instance based on a status update
    */
   updateInstance(update: StatusUpdate): ClaudeInstance {
     const existing = this.instances.get(update.session_id);
 
+    // Prevent non-overriding states from clearing sticky states
+    // This ensures permission/question states persist until user actually responds
+    // HOWEVER: if the hook event indicates actual progress, clear sticky states
+    let effectiveState = update.state;
+    if (existing) {
+      const currentIsSticky = InstanceManager.STICKY_STATES.has(existing.state);
+      const newIsNonOverriding = InstanceManager.NON_OVERRIDING_STATES.has(update.state);
+      const isProgressEvent = InstanceManager.PROGRESS_HOOK_EVENTS.has(update.hook_event);
+
+      if (currentIsSticky && newIsNonOverriding && !isProgressEvent) {
+        // Keep the sticky state, but still update metadata and timestamp
+        // Only if this is NOT a progress event (which would indicate Claude moved on)
+        effectiveState = existing.state;
+      }
+    }
+
     const instance: ClaudeInstance = {
       sessionId: update.session_id,
-      state: update.state,
+      state: effectiveState,
       metadata: update.metadata,
       lastUpdate: Date.now(),
       name: existing?.name

@@ -178,22 +178,23 @@ export class StatusServer {
   }
 
   private handleStatusUpdate(update: StatusUpdate): void {
-    this.instanceManager.updateInstance(update);
+    const instance = this.instanceManager.updateInstance(update);
 
-    // Broadcast to all connected clients
+    // Broadcast the effective state to all connected clients
+    // The instance manager may have kept a sticky state instead of the incoming state
     const message: WebSocketMessage = {
       type: "update",
       sessionId: update.session_id,
-      state: update.state,
+      state: instance.state,
       metadata: update.metadata
     };
 
     this.broadcastToClients(message);
 
-    // Notify registered callbacks
+    // Notify registered callbacks with the effective state
     this.statusChangeCallbacks.forEach((callback) => {
       try {
-        callback(update.session_id, update.state, update.metadata);
+        callback(update.session_id, instance.state, update.metadata);
       } catch (e) {
         // Ignore callback errors
       }
