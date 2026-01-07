@@ -14,12 +14,14 @@ const execAsync = promisify(exec);
  */
 export async function pickFolder(): Promise<string | null> {
   try {
+    // Note: choose folder is a Standard Additions command, not a System Events command
+    // We activate Finder to bring the dialog to the front
     const appleScript = `
-      tell application "System Events"
+      tell application "Finder"
         activate
-        set selectedFolder to choose folder with prompt "Select project folder for Claude Code"
-        return POSIX path of selectedFolder
       end tell
+      set selectedFolder to choose folder with prompt "Select project folder for Claude Code"
+      return POSIX path of selectedFolder
     `;
 
     const { stdout } = await execAsync(`osascript -e '${appleScript}'`);

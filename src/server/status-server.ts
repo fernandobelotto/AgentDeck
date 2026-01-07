@@ -1,7 +1,7 @@
 import http from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import { InstanceManager } from "./instance-manager.js";
-import { isKittyAvailable, getKittySocketPath } from "../utils/kitty-remote.js";
+import { isKittyAvailable, getKittySocketPath, findWorkingSocket, getSocketCandidates, clearSocketCache } from "../utils/kitty-remote.js";
 import { pickFolder } from "../utils/folder-picker.js";
 import type {
   StatusUpdate,
@@ -113,10 +113,19 @@ export class StatusServer {
 
   private async handleKittyStatus(res: http.ServerResponse): Promise<void> {
     try {
-      const available = await isKittyAvailable();
-      const socketPath = getKittySocketPath();
+      // Clear cache to force re-detection
+      clearSocketCache();
+
+      // Find a working socket by testing each candidate
+      const workingSocket = await findWorkingSocket();
+      const candidates = getSocketCandidates();
+
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ available, socketPath }));
+      res.end(JSON.stringify({
+        available: workingSocket !== null,
+        socketPath: workingSocket || getKittySocketPath(),
+        candidates
+      }));
     } catch (error) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ available: false, error: String(error) }));

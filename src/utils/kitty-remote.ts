@@ -75,17 +75,21 @@ export interface KittyRemoteOptions {
 // Socket Path Detection
 // ============================================================================
 
+/** Cache for working socket path (cleared on failed connections) */
+let cachedSocketPath: string | null = null;
+
 /**
- * Find Kitty socket in /tmp directory
- * Looks for /tmp/kitty or /tmp/kitty-* sockets
+ * Find all Kitty socket candidates in /tmp directory
  */
-function findKittySocket(): string | null {
+function findKittySocketCandidates(): string[] {
+  const candidates: string[] = [];
+
   try {
     // First check for exact /tmp/kitty socket
     try {
       const stat = statSync("/tmp/kitty");
       if (stat.isSocket()) {
-        return "unix:/tmp/kitty";
+        candidates.push("unix:/tmp/kitty");
       }
     } catch {
       // Not found, continue searching
@@ -94,7 +98,7 @@ function findKittySocket(): string | null {
     // Look for /tmp/kitty-* sockets (PID-suffixed)
     const files = readdirSync("/tmp");
     const kittySockets = files
-      .filter(f => f.startsWith("kitty-") || f === "kitty")
+      .filter(f => f.startsWith("kitty-"))
       .map(f => `/tmp/${f}`)
       .filter(path => {
         try {
@@ -104,41 +108,93 @@ function findKittySocket(): string | null {
         }
       });
 
-    if (kittySockets.length > 0) {
-      // Return the most recently modified socket
-      kittySockets.sort((a, b) => {
-        try {
-          return statSync(b).mtimeMs - statSync(a).mtimeMs;
-        } catch {
-          return 0;
-        }
-      });
-      return `unix:${kittySockets[0]}`;
-    }
+    // Sort by modification time (most recent first)
+    kittySockets.sort((a, b) => {
+      try {
+        return statSync(b).mtimeMs - statSync(a).mtimeMs;
+      } catch {
+        return 0;
+      }
+    });
+
+    candidates.push(...kittySockets.map(s => `unix:${s}`));
   } catch {
     // Ignore errors
   }
-  return null;
+
+  return candidates;
+}
+
+/**
+ * Clear the cached socket path (call when connection fails)
+ */
+export function clearSocketCache(): void {
+  cachedSocketPath = null;
+}
+
+/**
+ * Get all detected socket candidates (for debugging)
+ */
+export function getSocketCandidates(): string[] {
+  return findKittySocketCandidates();
 }
 
 /**
  * Get the Kitty socket path for remote control
  * Priority:
- * 1. KITTY_LISTEN_ON environment variable
- * 2. Auto-detect /tmp/kitty or /tmp/kitty-* sockets
- * 3. Default: unix:/tmp/kitty
+ * 1. Cached working socket path
+ * 2. KITTY_LISTEN_ON environment variable
+ * 3. Auto-detect /tmp/kitty or /tmp/kitty-* sockets
+ * 4. Default: unix:/tmp/kitty
  */
 export function getKittySocketPath(): string {
+  // Return cached path if available
+  if (cachedSocketPath) {
+    return cachedSocketPath;
+  }
+
   if (process.env.KITTY_LISTEN_ON) {
     return process.env.KITTY_LISTEN_ON;
   }
 
-  const detected = findKittySocket();
-  if (detected) {
-    return detected;
+  const candidates = findKittySocketCandidates();
+  if (candidates.length > 0) {
+    return candidates[0];
   }
 
   return "unix:/tmp/kitty";
+}
+
+/**
+ * Find a working Kitty socket by testing each candidate
+ * Returns the first socket that responds to `ls` command
+ */
+export async function findWorkingSocket(): Promise<string | null> {
+  // Check environment variable first
+  if (process.env.KITTY_LISTEN_ON) {
+    const envSocket = process.env.KITTY_LISTEN_ON;
+    try {
+      await execKittenCommand("ls", [], { socketPath: envSocket, timeout: 2000 });
+      cachedSocketPath = envSocket;
+      return envSocket;
+    } catch {
+      // Continue to other candidates
+    }
+  }
+
+  const candidates = findKittySocketCandidates();
+
+  for (const socketPath of candidates) {
+    try {
+      await execKittenCommand("ls", [], { socketPath, timeout: 2000 });
+      cachedSocketPath = socketPath;
+      return socketPath;
+    } catch {
+      // Try next candidate
+    }
+  }
+
+  return null;
 }
 
 // ============================================================================
