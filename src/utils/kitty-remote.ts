@@ -307,6 +307,33 @@ export async function sendText(
 }
 
 /**
+ * Scroll a window to the bottom of scrollback
+ * Uses: kitten @ --to <socket> scroll-window --match <match> end
+ */
+export async function scrollWindowToBottom(
+  match?: KittyWindowMatch,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  const args: string[] = [];
+
+  if (match) {
+    const matchString = buildMatchString(match);
+    if (matchString) {
+      args.push("--match", matchString);
+    }
+  }
+
+  args.push("end");
+
+  try {
+    await execKittenCommand("scroll-window", args, options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Send a key press to a window
  * Uses: kitten @ --to <socket> send-key --match <match> <key>
  * This is better for TUI apps that need actual key events, not text input
@@ -476,7 +503,7 @@ export async function findClaudeWindow(
 }
 
 /**
- * Focus the terminal window running Claude Code
+ * Focus the terminal window running Claude Code and scroll to bottom
  */
 export async function focusClaudeWindow(
   sessionId?: string,
@@ -488,7 +515,12 @@ export async function focusClaudeWindow(
     console.warn("Could not find Claude Code window in Kitty");
     return false;
   }
-  return focusWindow({ id: window.id }, options);
+  const focused = await focusWindow({ id: window.id }, options);
+  if (focused) {
+    // Scroll to bottom after focusing so user sees latest output
+    await scrollWindowToBottom({ id: window.id }, options);
+  }
+  return focused;
 }
 
 /**
