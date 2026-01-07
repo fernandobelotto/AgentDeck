@@ -8,7 +8,7 @@
       --sdpi-bgcolor: #2d2d2d;
       --sdpi-color: #d8d8d8;
       --sdpi-bordercolor: #3a3a3a;
-      --sdpi-highlight: #e94560;
+      --sdpi-highlight: #D97757;
     }
 
     * {
@@ -63,7 +63,9 @@
 
     .sdpi-item-checkbox {
       display: flex;
+      flex-direction: row;
       align-items: center;
+      justify-content: center;
       gap: 8px;
     }
 
@@ -98,7 +100,7 @@
     }
 
     button:hover {
-      background-color: #c93850;
+      background-color: #C4644A;
     }
 
     /* Health Status Section */
@@ -287,25 +289,15 @@
     </div>
     <div class="socket-path" id="kittySocket"></div>
 
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Instance Name</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="instanceName" placeholder="e.g., Main Project" />
-      </div>
-      <div class="sdpi-info">Optional display name for this button</div>
-    </div>
-
-    <div class="sdpi-item">
-      <div class="sdpi-item-label">Session ID</div>
-      <div class="sdpi-item-value">
-        <input type="text" id="sessionId" placeholder="Auto-populated when selecting instance" readonly />
-      </div>
-    </div>
+    <!-- Instance Name is hidden from UI but still used programmatically for auto-fill from folder name -->
+    <input type="hidden" id="instanceName" />
 
     <div class="sdpi-item sdpi-item-checkbox">
       <input type="checkbox" id="autoAssign" />
       <label for="autoAssign">Auto-assign next available instance</label>
     </div>
+
+    <input type="hidden" id="sessionId" />
 
     <div class="sdpi-item">
       <div class="sdpi-item-label">Project Folder</div>
