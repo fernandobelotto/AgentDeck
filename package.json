@@ -7,7 +7,9 @@
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "link": "streamdeck link com.claudedeck.plugin.sdPlugin"
+    "link": "streamdeck link com.claudedeck.plugin.sdPlugin",
+    "restart": "streamdeck restart com.claudedeck.plugin",
+    "preview": "open preview.html"
   },
   "keywords": [
     "streamdeck",

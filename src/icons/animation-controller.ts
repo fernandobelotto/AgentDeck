@@ -13,8 +13,8 @@ export class AnimationController {
   private onFrameUpdate: FrameUpdateCallback;
   private isRunning: boolean = false;
 
-  /** Animation frame rate (frames per second) */
-  private static readonly FPS = 10;
+  /** Animation frame rate (frames per second) - 12 FPS for smooth, calm animations */
+  private static readonly FPS = 12;
   /** Frame interval in milliseconds */
   private static readonly FRAME_INTERVAL_MS = 1000 / AnimationController.FPS;
 

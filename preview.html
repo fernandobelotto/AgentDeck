@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ClaudeDeck Animation Preview</title>
+  <style>
+    body {
+      background: #1a1a2e;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: white;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 { margin-bottom: 40px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+    }
+    .state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .icon-container {
+      width: 144px;
+      height: 144px;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    .label {
+      font-size: 14px;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+  <h1>ClaudeDeck - Calm Animations Preview</h1>
+  <div class="grid">
+    <div class="state">
+      <div class="icon-container" id="idle"></div>
+      <span class="label">Idle (Static)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="running"></div>
+      <span class="label">Running (Orbit)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="tool_use"></div>
+      <span class="label">Tool Use (Ripple)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="editing"></div>
+      <span class="label">Editing (Float)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="question"></div>
+      <span class="label">Question (Pulse)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="permission"></div>
+      <span class="label">Permission (Wave)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="error"></div>
+      <span class="label">Error (Static)</span>
+    </div>
+    <div class="state">
+      <div class="icon-container" id="disconnected"></div>
+      <span class="label">Disconnected (Static)</span>
+    </div>
+  </div>
+
+  <script>
+    const SIZE = 144;
+    const CENTER = 72;
+    const FPS = 12;  // Match the plugin FPS
+
+    const STATE_CONFIGS = {
+      idle: { primaryColor: "#34D399", secondaryColor: "#10B981", glowColor: "#34D39940", icon: "check", animationType: 'none', animationFrames: 1 },
+      running: { primaryColor: "#60A5FA", secondaryColor: "#3B82F6", glowColor: "#60A5FA50", icon: "loader", animationType: 'orbit', animationFrames: 96 },
+      tool_use: { primaryColor: "#FBBF24", secondaryColor: "#F59E0B", glowColor: "#FBBF2450", icon: "wrench", animationType: 'ripple', animationFrames: 72 },
+      editing: { primaryColor: "#A78BFA", secondaryColor: "#8B5CF6", glowColor: "#A78BFA50", icon: "pencil", animationType: 'float', animationFrames: 84 },
+      question: { primaryColor: "#22D3EE", secondaryColor: "#06B6D4", glowColor: "#22D3EE60", icon: "help", animationType: 'pulse', animationFrames: 48 },
+      permission: { primaryColor: "#F87171", secondaryColor: "#EF4444", glowColor: "#F8717170", icon: "shield", animationType: 'wave', animationFrames: 60 },
+      error: { primaryColor: "#F87171", secondaryColor: "#EF4444", glowColor: "#F8717140", icon: "alert", animationType: 'none', animationFrames: 1 },
+      disconnected: { primaryColor: "#6B7280", secondaryColor: "#4B5563", glowColor: "#6B728030", icon: "unplug", animationType: 'none', animationFrames: 1 }
+    };
+
+    const LUCIDE_ICONS = {
+      check: `<circle cx="0" cy="0" r="28" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>
+        <path d="M-12 0 L-4 8 L12 -8" stroke="currentColor" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+      loader: `<path d="M0 -24 A24 24 0 0 1 20.78 12" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+      wrench: `<path d="M8.4 3.8a.6.6 0 0 0 0 .84l.96.96a.6.6 0 0 0 .84 0l1.86-1.86c.19-.19.52-.13.59.13a3.6 3.6 0 0 1-4.96 4.23l-4.74 4.75a.6.6 0 0 1-1.8-1.8l4.75-4.74a3.6 3.6 0 0 1 4.23-4.96c.26.07.33.4.13.59z" transform="scale(2.8) translate(-7.2, -7.2)" stroke="currentColor" stroke-width="0.7" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
+      pencil: `<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z" transform="scale(2.2) translate(-12, -12)" stroke="currentColor" stroke-width="0.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m15 5 4 4" transform="scale(2.2) translate(-12, -12)" stroke="currentColor" stroke-width="0.9" fill="none" stroke-linecap="round"/>`,
+      help: `<circle cx="0" cy="0" r="28" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>
+        <path d="M-6 -8 Q-6 -14 0 -14 Q6 -14 6 -8 Q6 -2 0 -2 L0 4" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="0" cy="12" r="1.5" fill="currentColor"/>`,
+      shield: `<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" transform="scale(2.5) translate(-12, -12)" stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="0" y1="-8" x2="0" y2="2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+        <circle cx="0" cy="10" r="1.8" fill="currentColor"/>`,
+      alert: `<circle cx="0" cy="0" r="28" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>
+        <line x1="0" y1="-12" x2="0" y2="2" stroke="currentColor" stroke-width="3.5" stroke-linecap="round"/>
+        <circle cx="0" cy="12" r="2" fill="currentColor"/>`,
+      unplug: `<path d="m19 5 3-3" transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="m2 22 3-3" transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z" transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z" transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+    };
+
+    function easeInOutSine(t) { return -(Math.cos(Math.PI * t) - 1) / 2; }
+
+    function generateOrbitParticles(frame, totalFrames, color) {
+      let particles = [];
+      const numParticles = 3;
+      const orbitRadius = 42;
+
+      for (let i = 0; i < numParticles; i++) {
+        const baseAngle = (i / numParticles) * Math.PI * 2;
+        const animProgress = frame / totalFrames;
+        const angle = baseAngle + animProgress * Math.PI * 2;
+        const size = 3.5 + Math.sin(animProgress * Math.PI * 2 + i) * 0.5;
+        const opacity = 0.5 + Math.sin(animProgress * Math.PI * 2 + i * 0.8) * 0.15;
+        const x = Math.cos(angle) * orbitRadius;
+        const y = Math.sin(angle) * orbitRadius;
+        particles.push(`<circle cx="${x}" cy="${y}" r="${size.toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`);
+      }
+
+      const glowOpacity = 0.08 + Math.sin((frame / totalFrames) * Math.PI * 2) * 0.04;
+      particles.unshift(`<circle cx="0" cy="0" r="${orbitRadius}" stroke="${color}" stroke-width="8" fill="none" opacity="${glowOpacity.toFixed(2)}"/>`);
+
+      return particles.join('\n');
+    }
+
+    function generateRipples(frame, totalFrames, color) {
+      let ripples = [];
+      for (let i = 0; i < 2; i++) {
+        const offset = i / 2;
+        const progress = ((frame / totalFrames) + offset) % 1;
+        const eased = easeInOutSine(progress);
+        const radius = 25 + eased * 30;
+        const opacity = (1 - eased) * 0.25;
+        const strokeWidth = 3 - eased * 2;
+        if (opacity > 0.03) {
+          ripples.push(`<circle cx="0" cy="0" r="${radius.toFixed(1)}" stroke="${color}" stroke-width="${strokeWidth.toFixed(1)}" fill="none" opacity="${opacity.toFixed(2)}"/>`);
+        }
+      }
+      return ripples.join('\n');
+    }
+
+    function generateFloatingParticles(frame, totalFrames, color) {
+      let particles = [];
+      const numParticles = 4;
+      for (let i = 0; i < numParticles; i++) {
+        const baseX = (i - numParticles / 2) * 18 + 9;
+        const animProgress = (frame / totalFrames + i * 0.25) % 1;
+        const y = 40 - animProgress * 80;
+        const x = baseX + Math.sin(animProgress * Math.PI * 2 + i) * 5;
+        const size = 2.5 + Math.sin(animProgress * Math.PI) * 1;
+        const opacity = Math.sin(animProgress * Math.PI) * 0.4;
+        if (opacity > 0.05) {
+          particles.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${size.toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`);
+        }
+      }
+      return particles.join('\n');
+    }
+
+    function generatePulseGlow(frame, totalFrames, color) {
+      const progress = frame / totalFrames;
+      const pulsePhase = Math.sin(progress * Math.PI * 2);
+      const innerGlow = 0.2 + pulsePhase * 0.1;
+      const outerGlow = 0.08 + pulsePhase * 0.05;
+      const outerRadius = 48 + pulsePhase * 4;
+      return `<circle cx="0" cy="0" r="${outerRadius.toFixed(1)}" fill="${color}" opacity="${outerGlow.toFixed(2)}"/>
+        <circle cx="0" cy="0" r="38" fill="${color}" opacity="${innerGlow.toFixed(2)}"/>`;
+    }
+
+    function generateWaveAnimation(frame, totalFrames, color) {
+      let elements = [];
+      const progress = frame / totalFrames;
+      const pulseIntensity = 0.15 + Math.sin(progress * Math.PI * 2) * 0.1;
+      elements.push(`<circle cx="0" cy="0" r="45" fill="${color}" opacity="${pulseIntensity.toFixed(2)}"/>`);
+
+      const ringProgress = progress;
+      const radius = 30 + ringProgress * 25;
+      const ringOpacity = (1 - ringProgress) * 0.2;
+      if (ringOpacity > 0.03) {
+        elements.push(`<circle cx="0" cy="0" r="${radius.toFixed(1)}" stroke="${color}" stroke-width="2.5" fill="none" opacity="${ringOpacity.toFixed(2)}"/>`);
+      }
+      return elements.join('\n');
+    }
+
+    function generateAnimationLayer(config, frame) {
+      switch (config.animationType) {
+        case 'orbit': return generateOrbitParticles(frame, config.animationFrames, config.primaryColor);
+        case 'ripple': return generateRipples(frame, config.animationFrames, config.primaryColor);
+        case 'float': return generateFloatingParticles(frame, config.animationFrames, config.primaryColor);
+        case 'pulse': return generatePulseGlow(frame, config.animationFrames, config.primaryColor);
+        case 'wave': return generateWaveAnimation(frame, config.animationFrames, config.primaryColor);
+        default: return '';
+      }
+    }
+
+    function generateFrame(state, frame) {
+      const config = STATE_CONFIGS[state];
+      const iconPath = LUCIDE_ICONS[config.icon];
+      const rotation = state === 'running' ? (frame / config.animationFrames) * 360 : 0;
+      const animationLayer = generateAnimationLayer(config, frame);
+      const ambientGlow = config.animationType === 'none' ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>` : '';
+
+      return `<svg width="${SIZE}" height="${SIZE}" viewBox="0 0 ${SIZE} ${SIZE}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="glow"><feGaussianBlur stdDeviation="3" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+        </defs>
+        <rect width="${SIZE}" height="${SIZE}" fill="#0f0f1a" rx="16"/>
+        <g transform="translate(${CENTER}, ${CENTER - 4})">
+          ${animationLayer}
+          ${ambientGlow}
+          <g transform="rotate(${rotation})" filter="url(#glow)">
+            <g style="color: ${config.primaryColor}">${iconPath}</g>
+          </g>
+        </g>
+        <circle cx="118" cy="22" r="10" fill="${config.primaryColor}" opacity="0.9"/>
+        <circle cx="118" cy="22" r="6" fill="#0f0f1a"/>
+        <circle cx="118" cy="22" r="4" fill="${config.primaryColor}"/>
+      </svg>`;
+    }
+
+    const frames = {};
+    Object.keys(STATE_CONFIGS).forEach(state => frames[state] = 0);
+
+    let lastTime = 0;
+    const frameInterval = 1000 / FPS;
+
+    function animate(currentTime) {
+      if (currentTime - lastTime >= frameInterval) {
+        lastTime = currentTime;
+
+        Object.keys(STATE_CONFIGS).forEach(state => {
+          const config = STATE_CONFIGS[state];
+          const container = document.getElementById(state);
+          if (config.animationType !== 'none') {
+            frames[state] = (frames[state] + 1) % config.animationFrames;
+          }
+          container.innerHTML = generateFrame(state, frames[state]);
+        });
+      }
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+  </script>
+</body>
+</html>
