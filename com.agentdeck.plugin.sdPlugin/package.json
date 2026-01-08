@@ -1,0 +1,7 @@
+{
+  "name": "com.agentdeck.plugin",
+  "version": "1.0.0",
+  "description": "Stream Deck plugin for AgentDeck",
+  "main": "bin/plugin.js",
+  "private": true
+}

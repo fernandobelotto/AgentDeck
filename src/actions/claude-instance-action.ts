@@ -45,7 +45,7 @@ setInteractionLogger((msg) => logger.info(`[Interaction] ${msg}`));
  */
 export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings> {
   /** Action UUID from manifest */
-  override readonly manifestId = "com.claudedeck.plugin.claude-instance";
+  override readonly manifestId = "com.agentdeck.plugin.claude-instance";
 
   /** WebSocket connection to status server */
   private wsConnection: WebSocket | null = null;
@@ -399,7 +399,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
       this.wsConnection.on("open", () => {
         this.isConnecting = false;
-        console.log("Connected to ClaudeDeck status server");
+        console.log("Connected to AgentDeck status server");
       });
 
       this.wsConnection.on("message", (data) => {

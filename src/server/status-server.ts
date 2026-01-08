@@ -355,7 +355,7 @@ export class StatusServer {
 
       this.httpServer.listen(STATUS_PORT, "127.0.0.1", () => {
         this.isRunning = true;
-        console.log(`ClaudeDeck status server running on http://127.0.0.1:${STATUS_PORT}`);
+        console.log(`AgentDeck status server running on http://127.0.0.1:${STATUS_PORT}`);
         resolve();
       });
 

@@ -46,7 +46,7 @@ setInteractionLogger((msg) => logger.info(`[Interaction] ${msg}`));
  */
 export class GeminiInstanceAction extends SingletonAction<GeminiInstanceSettings> {
   /** Action UUID from manifest */
-  override readonly manifestId = "com.claudedeck.plugin.gemini-instance";
+  override readonly manifestId = "com.agentdeck.plugin.gemini-instance";
 
   /** WebSocket connection to status server */
   private wsConnection: WebSocket | null = null;
@@ -400,7 +400,7 @@ export class GeminiInstanceAction extends SingletonAction<GeminiInstanceSettings
 
       this.wsConnection.on("open", () => {
         this.isConnecting = false;
-        console.log("Gemini action connected to ClaudeDeck status server");
+        console.log("Gemini action connected to AgentDeck status server");
       });
 
       this.wsConnection.on("message", (data) => {

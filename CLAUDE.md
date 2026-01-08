@@ -13,14 +13,14 @@ npm run preview      # Open icon preview tool in browser
 
 Stream Deck CLI commands:
 ```bash
-streamdeck link com.claudedeck.plugin.sdPlugin      # Link plugin to Stream Deck
-streamdeck restart com.claudedeck.plugin            # Restart plugin after changes
-streamdeck validate com.claudedeck.plugin.sdPlugin  # Validate manifest.json
+streamdeck link com.agentdeck.plugin.sdPlugin      # Link plugin to Stream Deck
+streamdeck restart com.agentdeck.plugin            # Restart plugin after changes
+streamdeck validate com.agentdeck.plugin.sdPlugin  # Validate manifest.json
 ```
 
 ## Architecture
 
-ClaudeDeck is a Stream Deck plugin that monitors and controls Claude Code instances. The data flow is:
+AgentDeck is a Stream Deck plugin that monitors and controls Claude Code instances. The data flow is:
 
 ```
 Claude Code ──(hooks)──> Status Server ──(WebSocket)──> Stream Deck Plugin
@@ -75,7 +75,7 @@ The `hooks/status-reporter.sh` script reports Claude Code state to the status se
 
 ## Plugin Package Structure
 
-`com.claudedeck.plugin.sdPlugin/` is the deployable Stream Deck plugin:
+`com.agentdeck.plugin.sdPlugin/` is the deployable Stream Deck plugin:
 - `manifest.json` - Plugin metadata and action definitions
 - `bin/plugin.js` - Rollup-bundled JavaScript output
 - `ui/claude-instance.html` - Property Inspector UI
@@ -83,13 +83,13 @@ The `hooks/status-reporter.sh` script reports Claude Code state to the status se
 
 ## Configuration
 
-Users must add hooks to `~/.claude/settings.json` pointing to `~/.claudedeck/hooks/status-reporter.sh`. See README.md for the full hooks JSON template.
+Users must add hooks to `~/.claude/settings.json` pointing to `~/.agentdeck/hooks/status-reporter.sh`. See README.md for the full hooks JSON template.
 
 ## Testing
 
 Test hook script manually:
 ```bash
-echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.claudedeck/hooks/status-reporter.sh
+echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.agentdeck/hooks/status-reporter.sh
 ```
 
 Check server health:

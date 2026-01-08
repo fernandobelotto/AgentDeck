@@ -155,7 +155,7 @@ if (projectFolder) {
 
 ### View Plugin Logs
 ```bash
-cat ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.claudedeck.plugin.sdPlugin/logs/com.claudedeck.plugin.0.log | tail -50
+cat ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.agentdeck.plugin.sdPlugin/logs/com.agentdeck.plugin.0.log | tail -50
 ```
 
 ### Check Server Data

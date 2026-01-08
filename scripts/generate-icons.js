@@ -4,7 +4,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outputDir = join(__dirname, '../com.claudedeck.plugin.sdPlugin/imgs');
+const outputDir = join(__dirname, '../com.agentdeck.plugin.sdPlugin/imgs');
 
 // Anthropic color palette
 const ANTHROPIC = {

@@ -2,13 +2,13 @@
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Gemini Instance</title>
+  <title>Claude Instance</title>
   <style>
     :root {
       --sdpi-bgcolor: #2d2d2d;
       --sdpi-color: #d8d8d8;
       --sdpi-bordercolor: #3a3a3a;
-      --sdpi-highlight: #4285F4;
+      --sdpi-highlight: #D97757;
     }
 
     * {
@@ -99,7 +99,7 @@
     }
 
     button:hover {
-      background-color: #3367D6;
+      background-color: #C4644A;
     }
 
     /* Health Status Section */
@@ -226,10 +226,10 @@
       font-weight: 500;
     }
 
-    .state-idle { background-color: #4285F4; color: #fff; }
+    .state-idle { background-color: #22c55e; color: #000; }
     .state-running { background-color: #3b82f6; color: #fff; }
-    .state-tool_use { background-color: #4285F4; color: #fff; }
-    .state-editing { background-color: #7C4DFF; color: #fff; }
+    .state-tool_use { background-color: #f97316; color: #000; }
+    .state-editing { background-color: #a855f7; color: #fff; }
     .state-question { background-color: #06b6d4; color: #000; }
     .state-permission { background-color: #ef4444; color: #fff; }
     .state-error { background-color: #dc2626; color: #fff; }
@@ -266,7 +266,7 @@
 </head>
 <body>
   <div class="sdpi-wrapper">
-    <div class="sdpi-heading">Gemini Instance Settings</div>
+    <div class="sdpi-heading">Claude Instance Settings</div>
 
     <!-- Health Status -->
     <div class="health-status">
@@ -307,7 +307,7 @@
         <input type="text" id="projectFolder" placeholder="/path/to/project" />
         <button id="browseFolder">Browse</button>
       </div>
-      <div class="sdpi-info">When set, pressing the button launches Gemini CLI in this folder</div>
+      <div class="sdpi-info">When set, pressing the button launches Claude Code in this folder</div>
     </div>
 
     <div class="sdpi-item">
@@ -445,14 +445,13 @@
 
     function refreshInstances(forceCleanup = false) {
       // Use cleanup and dedupe params when manually refreshing
-      // Filter by source=gemini to only show Gemini instances
-      const params = forceCleanup ? "?cleanup=true&dedupe=true&source=gemini" : "?dedupe=true&source=gemini";
+      const params = forceCleanup ? "?cleanup=true&dedupe=true" : "?dedupe=true";
       fetch("http://127.0.0.1:19847/instances" + params)
         .then(res => res.json())
         .then(instances => {
           const list = document.getElementById("instanceList");
           if (instances.length === 0) {
-            list.innerHTML = '<div class="sdpi-info">No Gemini instances detected. Start a Gemini CLI session first.</div>';
+            list.innerHTML = '<div class="sdpi-info">No instances detected. Start a Claude Code session first.</div>';
             return;
           }
 
@@ -487,7 +486,7 @@
         })
         .catch(() => {
           document.getElementById("instanceList").innerHTML =
-            '<div class="sdpi-info">Could not connect to ClaudeDeck server.</div>';
+            '<div class="sdpi-info">Could not connect to AgentDeck server.</div>';
         });
     }
 

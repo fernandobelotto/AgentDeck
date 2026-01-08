@@ -1,14 +1,14 @@
 {
-  "name": "claudedeck",
+  "name": "agentdeck",
   "version": "1.0.0",
-  "description": "Stream Deck plugin to monitor and control Claude Code instances",
-  "main": "com.claudedeck.plugin.sdPlugin/bin/plugin.js",
+  "description": "Stream Deck plugin to monitor and control AI agent instances",
+  "main": "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
-    "link": "streamdeck link com.claudedeck.plugin.sdPlugin",
-    "restart": "streamdeck restart com.claudedeck.plugin",
+    "link": "streamdeck link com.agentdeck.plugin.sdPlugin",
+    "restart": "streamdeck restart com.agentdeck.plugin",
     "preview": "open preview.html",
     "icons": "node scripts/generate-icons.js"
   },
@@ -16,9 +16,11 @@
     "streamdeck",
     "claude",
     "claude-code",
+    "gemini",
+    "ai-agents",
     "plugin"
   ],
-  "author": "ClaudeDeck",
+  "author": "AgentDeck",
   "license": "MIT",
   "dependencies": {
     "@elgato/streamdeck": "^1.2.0",

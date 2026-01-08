@@ -1,11 +1,11 @@
 {
-  "Name": "ClaudeDeck",
+  "Name": "AgentDeck",
   "Version": "1.0.0.0",
-  "Author": "ClaudeDeck",
+  "Author": "AgentDeck",
   "Actions": [
     {
       "Name": "Claude Instance",
-      "UUID": "com.claudedeck.plugin.claude-instance",
+      "UUID": "com.agentdeck.plugin.claude-instance",
       "Icon": "imgs/action",
       "Tooltip": "Monitor and control a Claude Code instance",
       "PropertyInspectorPath": "ui/claude-instance.html",
@@ -18,7 +18,7 @@
     },
     {
       "Name": "Gemini Instance",
-      "UUID": "com.claudedeck.plugin.gemini-instance",
+      "UUID": "com.agentdeck.plugin.gemini-instance",
       "Icon": "imgs/gemini-action",
       "Tooltip": "Monitor and control a Gemini CLI instance",
       "PropertyInspectorPath": "ui/gemini-instance.html",
@@ -30,10 +30,10 @@
       ]
     }
   ],
-  "Category": "ClaudeDeck",
+  "Category": "AgentDeck",
   "CategoryIcon": "imgs/category",
   "CodePath": "bin/plugin.js",
-  "Description": "Monitor and control Claude Code instances from your Stream Deck",
+  "Description": "Monitor and control AI agent instances from your Stream Deck",
   "Icon": "imgs/plugin",
   "SDKVersion": 2,
   "Software": {
@@ -53,5 +53,5 @@
     "Version": "20",
     "Debug": "enabled"
   },
-  "UUID": "com.claudedeck.plugin"
+  "UUID": "com.agentdeck.plugin"
 }

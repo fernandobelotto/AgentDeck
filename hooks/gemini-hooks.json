@@ -3,25 +3,25 @@
     "SessionStart": [
       {
         "type": "command",
-        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+        "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
       }
     ],
     "SessionEnd": [
       {
         "type": "command",
-        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+        "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
       }
     ],
     "BeforeAgent": [
       {
         "type": "command",
-        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+        "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
       }
     ],
     "AfterAgent": [
       {
         "type": "command",
-        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+        "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
       }
     ],
     "BeforeTool": [
@@ -30,7 +30,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+            "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
           }
         ]
       }
@@ -41,7 +41,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+            "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
           }
         ]
       }
@@ -52,7 +52,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+            "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
           }
         ]
       }
@@ -60,7 +60,7 @@
     "PreCompress": [
       {
         "type": "command",
-        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+        "command": "~/.agentdeck/hooks/gemini-status-reporter.sh"
       }
     ]
   }

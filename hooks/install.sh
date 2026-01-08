@@ -1,8 +1,8 @@
 #!/bin/bash
-# ClaudeDeck Hook Installation Script
+# AgentDeck Hook Installation Script
 #
-# This script installs the ClaudeDeck hooks for Claude Code and Gemini CLI.
-# It copies the status-reporter.sh and gemini-status-reporter.sh scripts to ~/.claudedeck/hooks/
+# This script installs the AgentDeck hooks for Claude Code and Gemini CLI.
+# It copies the status-reporter.sh and gemini-status-reporter.sh scripts to ~/.agentdeck/hooks/
 # and provides instructions for configuring both tools.
 #
 # IMPORTANT: This script does NOT modify your settings files.
@@ -12,11 +12,11 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-INSTALL_DIR="$HOME/.claudedeck/hooks"
+INSTALL_DIR="$HOME/.agentdeck/hooks"
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
 GEMINI_SETTINGS="$HOME/.gemini/settings.json"
 
-echo "ClaudeDeck Hook Installation"
+echo "AgentDeck Hook Installation"
 echo "============================"
 echo ""
 echo "NOTE: This script will NOT modify your settings files."
@@ -62,7 +62,7 @@ echo "=========="
 echo ""
 echo "1. CLAUDE CODE SETUP"
 echo "--------------------"
-echo "Add the ClaudeDeck hooks to your Claude Code configuration."
+echo "Add the AgentDeck hooks to your Claude Code configuration."
 echo ""
 
 if [[ -f "$CLAUDE_SETTINGS" ]]; then
@@ -92,7 +92,7 @@ echo ""
 echo ""
 echo "2. GEMINI CLI SETUP (Optional)"
 echo "------------------------------"
-echo "Add the ClaudeDeck hooks to your Gemini CLI configuration."
+echo "Add the AgentDeck hooks to your Gemini CLI configuration."
 echo ""
 
 if [[ -f "$GEMINI_SETTINGS" ]]; then
@@ -123,7 +123,7 @@ echo ""
 echo "After configuring the hooks, restart any running Claude Code or Gemini CLI"
 echo "instances to pick up the new hook configuration."
 echo ""
-echo "The ClaudeDeck status server will automatically receive status updates"
+echo "The AgentDeck status server will automatically receive status updates"
 echo "from both Claude Code and Gemini CLI when you run the Stream Deck plugin."
 echo ""
 echo "Installation complete!"

@@ -1,4 +1,4 @@
-# ClaudeDeck
+# AgentDeck
 
 Stream Deck plugin to monitor and control your Claude Code instances with animated status icons and gesture controls.
 
@@ -21,7 +21,7 @@ Stream Deck plugin to monitor and control your Claude Code instances with animat
 
 ## Kitty Terminal Configuration
 
-ClaudeDeck uses Kitty's remote control API for terminal integration features like focusing windows, sending signals, and launching new Claude instances.
+AgentDeck uses Kitty's remote control API for terminal integration features like focusing windows, sending signals, and launching new Claude instances.
 
 ### Required Settings
 
@@ -36,7 +36,7 @@ After changing the config, **restart Kitty** for the settings to take effect.
 
 ### How It Works
 
-1. **Socket Detection**: ClaudeDeck automatically detects Kitty sockets at `/tmp/kitty` or `/tmp/kitty-*` (PID-suffixed)
+1. **Socket Detection**: AgentDeck automatically detects Kitty sockets at `/tmp/kitty` or `/tmp/kitty-*` (PID-suffixed)
 2. **Full Binary Paths**: On macOS, the plugin uses full paths to Kitty binaries (`/Applications/kitty.app/Contents/MacOS/kitten`) since Stream Deck plugins run in a sandboxed environment without access to shell PATH
 3. **Interactive Shell**: When launching new Claude instances, the plugin uses an interactive shell (`zsh -i -c claude`) to ensure shell aliases are available
 
@@ -49,12 +49,12 @@ After changing the config, **restart Kitty** for the settings to take effect.
 
 **Button press doesn't open new Claude window**
 - Test remote control manually: `kitten @ ls`
-- Check plugin logs in `com.claudedeck.plugin.sdPlugin/logs/`
+- Check plugin logs in `com.agentdeck.plugin.sdPlugin/logs/`
 - Verify Kitty is installed at `/Applications/kitty.app` (macOS)
 
 **Claude command not found when launching**
 - The `claude` command may be an alias in your shell config
-- ClaudeDeck launches with `-i` flag to load interactive shell config (`.zshrc`)
+- AgentDeck launches with `-i` flag to load interactive shell config (`.zshrc`)
 - Ensure your Claude alias is defined in `~/.zshrc` (not just `~/.zprofile`)
 
 ### Technical Notes
@@ -64,14 +64,14 @@ After changing the config, **restart Kitty** for the settings to take effect.
   2. Auto-detected `/tmp/kitty` or `/tmp/kitty-*` sockets
   3. Default fallback to `unix:/tmp/kitty`
 
-- **Launch Fallback**: If remote control fails, ClaudeDeck falls back to launching Kitty directly via the binary path
+- **Launch Fallback**: If remote control fails, AgentDeck falls back to launching Kitty directly via the binary path
 
 ## Installation
 
 ### 1. Install Dependencies
 
 ```bash
-cd ClaudeDeck
+cd AgentDeck
 npm install
 ```
 
@@ -84,22 +84,22 @@ npm run build
 ### 3. Link the Plugin to Stream Deck
 
 ```bash
-streamdeck link com.claudedeck.plugin.sdPlugin
+streamdeck link com.agentdeck.plugin.sdPlugin
 ```
 
-Or manually copy the `com.claudedeck.plugin.sdPlugin` folder to:
+Or manually copy the `com.agentdeck.plugin.sdPlugin` folder to:
 - **macOS**: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
 - **Windows**: `%appdata%\Elgato\StreamDeck\Plugins\`
 
 ### 4. Install Hook Script
 
-The hook script reports Claude Code status to the ClaudeDeck server.
+The hook script reports Claude Code status to the AgentDeck server.
 
 ```bash
-# Copy the hook script to ~/.claudedeck/hooks/
-mkdir -p ~/.claudedeck/hooks
-cp hooks/status-reporter.sh ~/.claudedeck/hooks/
-chmod +x ~/.claudedeck/hooks/status-reporter.sh
+# Copy the hook script to ~/.agentdeck/hooks/
+mkdir -p ~/.agentdeck/hooks
+cp hooks/status-reporter.sh ~/.agentdeck/hooks/
+chmod +x ~/.agentdeck/hooks/status-reporter.sh
 ```
 
 ### 5. Configure Claude Code Hooks
@@ -117,7 +117,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -129,7 +129,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -141,7 +141,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -153,7 +153,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -165,7 +165,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -177,7 +177,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -189,7 +189,7 @@ Edit `~/.claude/settings.json` and add the hooks configuration. If you have exis
         "hooks": [
           {
             "type": "command",
-            "command": "~/.claudedeck/hooks/status-reporter.sh",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
             "timeout": 5
           }
         ]
@@ -258,12 +258,12 @@ npm run build
 ### Plugin not showing in Stream Deck
 1. Ensure the plugin is in the correct Plugins directory
 2. Restart the Stream Deck application
-3. Check plugin logs in `com.claudedeck.plugin.sdPlugin/logs/`
+3. Check plugin logs in `com.agentdeck.plugin.sdPlugin/logs/`
 
 ### Status not updating
 1. Verify hooks are configured in `~/.claude/settings.json`
 2. Check that `jq` and `curl` are installed
-3. Test the hook script: `echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.claudedeck/hooks/status-reporter.sh`
+3. Test the hook script: `echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.agentdeck/hooks/status-reporter.sh`
 4. Check server is running: `curl http://127.0.0.1:19847/health`
 
 ### Server port already in use

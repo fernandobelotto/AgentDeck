@@ -5,7 +5,7 @@ import commonjs from "@rollup/plugin-commonjs";
 export default {
   input: "src/plugin.ts",
   output: {
-    file: "com.claudedeck.plugin.sdPlugin/bin/plugin.js",
+    file: "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
     format: "cjs",
     sourcemap: true,
     inlineDynamicImports: true

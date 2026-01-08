@@ -430,7 +430,7 @@ function buildMatchString(match: KittyWindowMatch): string | null {
 }
 
 // ============================================================================
-// ClaudeDeck-specific Helper Functions
+// AgentDeck-specific Helper Functions
 // ============================================================================
 
 /**

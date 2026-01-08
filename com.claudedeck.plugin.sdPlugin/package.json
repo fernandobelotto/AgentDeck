@@ -1,7 +1,0 @@
-{
-  "name": "com.claudedeck.plugin",
-  "version": "1.0.0",
-  "description": "Stream Deck plugin for ClaudeDeck",
-  "main": "bin/plugin.js",
-  "private": true
-}

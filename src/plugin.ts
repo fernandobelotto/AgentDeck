@@ -10,7 +10,7 @@ streamDeck.logger.setLevel(LogLevel.DEBUG);
 // Start the status server
 const statusServer = getStatusServer();
 statusServer.start().then(() => {
-  streamDeck.logger.info("ClaudeDeck status server started");
+  streamDeck.logger.info("AgentDeck status server started");
 }).catch((err) => {
   streamDeck.logger.error("Failed to start status server:", err);
 });
@@ -24,17 +24,17 @@ streamDeck.actions.registerAction(new GeminiInstanceAction());
 // Connect to Stream Deck
 streamDeck.connect();
 
-streamDeck.logger.info("ClaudeDeck plugin initialized");
+streamDeck.logger.info("AgentDeck plugin initialized");
 
 // Handle plugin shutdown
 process.on("SIGTERM", async () => {
-  streamDeck.logger.info("ClaudeDeck plugin shutting down");
+  streamDeck.logger.info("AgentDeck plugin shutting down");
   await statusServer.stop();
   process.exit(0);
 });
 
 process.on("SIGINT", async () => {
-  streamDeck.logger.info("ClaudeDeck plugin interrupted");
+  streamDeck.logger.info("AgentDeck plugin interrupted");
   await statusServer.stop();
   process.exit(0);
 });

@@ -10,12 +10,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "outDir": "./com.claudedeck.plugin.sdPlugin/bin",
+    "outDir": "./com.agentdeck.plugin.sdPlugin/bin",
     "rootDir": "./src",
     "resolveJsonModule": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "com.claudedeck.plugin.sdPlugin"]
+  "exclude": ["node_modules", "com.agentdeck.plugin.sdPlugin"]
 }

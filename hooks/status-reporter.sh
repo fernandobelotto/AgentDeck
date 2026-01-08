@@ -1,28 +1,28 @@
 #!/bin/bash
-# ClaudeDeck Status Reporter Hook
-# Sends status updates to the local ClaudeDeck server
+# AgentDeck Status Reporter Hook
+# Sends status updates to the local AgentDeck server
 #
 # This script is called by Claude Code hooks and receives JSON input via stdin.
 # It determines the current state based on the hook event and tool name,
-# then POSTs the status to the ClaudeDeck server.
+# then POSTs the status to the AgentDeck server.
 #
 # Additionally, it outputs VT escape sequences to the terminal for native
 # integration with terminals like Ghostty (progress indicators, window titles).
 
 set -e
 
-CLAUDEDECK_PORT="${CLAUDEDECK_PORT:-19847}"
-CLAUDEDECK_URL="http://127.0.0.1:${CLAUDEDECK_PORT}/status"
+AGENTDECK_PORT="${AGENTDECK_PORT:-19847}"
+AGENTDECK_URL="http://127.0.0.1:${AGENTDECK_PORT}/status"
 
 # VT sequence control - set to "false" to disable terminal integration
-CLAUDEDECK_VT_ENABLED="${CLAUDEDECK_VT_ENABLED:-true}"
+AGENTDECK_VT_ENABLED="${AGENTDECK_VT_ENABLED:-true}"
 
 # Read hook input from stdin
 input=$(cat)
 
 # Check if jq is available
 if ! command -v jq &> /dev/null; then
-    echo "Warning: jq not found, ClaudeDeck status reporting disabled" >&2
+    echo "Warning: jq not found, AgentDeck status reporting disabled" >&2
     exit 0
 fi
 
@@ -103,7 +103,7 @@ esac
 # Reference: https://ghostty.org/docs/vt
 # =============================================================================
 
-if [[ "$CLAUDEDECK_VT_ENABLED" == "true" ]] && [[ -t 0 || -e /dev/tty ]]; then
+if [[ "$AGENTDECK_VT_ENABLED" == "true" ]] && [[ -t 0 || -e /dev/tty ]]; then
     # Determine the TTY to write to
     TTY_DEVICE="/dev/tty"
 
@@ -205,12 +205,12 @@ payload=$(jq -n \
         }
     }')
 
-# Send to ClaudeDeck server (fire and forget, don't block Claude Code)
+# Send to AgentDeck server (fire and forget, don't block Claude Code)
 # Use timeout to prevent blocking if server is unresponsive
 curl -s -X POST \
     -H "Content-Type: application/json" \
     -d "$payload" \
-    "$CLAUDEDECK_URL" \
+    "$AGENTDECK_URL" \
     --connect-timeout 1 \
     --max-time 2 \
     > /dev/null 2>&1 &

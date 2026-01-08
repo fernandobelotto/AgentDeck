@@ -1,4 +1,4 @@
-# ClaudeDeck Feature & UX Improvement Ideas
+# AgentDeck Feature & UX Improvement Ideas
 
 This document contains feature suggestions and UX improvements identified through comprehensive codebase analysis.
 
