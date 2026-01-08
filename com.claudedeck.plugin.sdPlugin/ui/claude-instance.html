@@ -291,6 +291,17 @@
     <input type="hidden" id="sessionId" />
 
     <div class="sdpi-item">
+      <div class="sdpi-item-label">Display Mode</div>
+      <select id="displayMode" class="sdpi-item-value">
+        <option value="status">Status (Animated)</option>
+        <option value="tokens">Token Counter</option>
+        <option value="cost">Cost Tracker</option>
+        <option value="activity">Activity Log</option>
+      </select>
+      <div class="sdpi-info">Choose what to display on the key</div>
+    </div>
+
+    <div class="sdpi-item">
       <div class="sdpi-item-label">Project Folder</div>
       <div class="sdpi-item-value folder-input-row">
         <input type="text" id="projectFolder" placeholder="/path/to/project" />
@@ -360,6 +371,7 @@
       document.getElementById("instanceName").value = settings.instanceName || "";
       document.getElementById("sessionId").value = settings.sessionId || "";
       document.getElementById("autoAssign").checked = settings.autoAssign || false;
+      document.getElementById("displayMode").value = settings.displayMode || "status";
       document.getElementById("projectFolder").value = settings.projectFolder || "";
     }
 
@@ -367,6 +379,7 @@
       settings.instanceName = document.getElementById("instanceName").value;
       settings.sessionId = document.getElementById("sessionId").value;
       settings.autoAssign = document.getElementById("autoAssign").checked;
+      settings.displayMode = document.getElementById("displayMode").value;
       settings.projectFolder = document.getElementById("projectFolder").value;
 
       if (websocket && websocket.readyState === WebSocket.OPEN) {
@@ -479,6 +492,7 @@
 
     document.getElementById("instanceName").addEventListener("change", saveSettings);
     document.getElementById("autoAssign").addEventListener("change", saveSettings);
+    document.getElementById("displayMode").addEventListener("change", saveSettings);
     document.getElementById("projectFolder").addEventListener("change", saveSettings);
     document.getElementById("browseFolder").addEventListener("click", browseFolder);
     document.getElementById("refreshInstances").addEventListener("click", () => refreshInstances(true));

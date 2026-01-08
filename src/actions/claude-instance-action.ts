@@ -13,14 +13,18 @@ import { WebSocket } from "ws";
 
 import { InteractionHandler, setInteractionLogger } from "../utils/interaction-handler.js";
 import { AnimationController } from "../icons/animation-controller.js";
+import { IconGenerator } from "../icons/icon-generator.js";
 import { focusTerminal, sendCancelSignal, sendApproveSignal, openTerminalWithClaude } from "../utils/terminal-focus.js";
 import { isKittyAvailable, launchKittyWithRemoteControl } from "../utils/kitty-remote.js";
+import { formatTokenCount, formatCost } from "../server/usage-tracker.js";
 import type {
   ClaudeInstanceSettings,
   ClaudeState,
   WebSocketMessage,
   ClaudeInstance,
-  CommandMessage
+  CommandMessage,
+  UsageStats,
+  DisplayMode
 } from "../server/types.js";
 
 const WS_URL = "ws://127.0.0.1:19847";
@@ -60,6 +64,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
   /** Current state of each Claude Code instance */
   private instanceStates: Map<string, ClaudeState> = new Map();
+
+  /** Usage stats for each Claude Code instance */
+  private usageStats: Map<string, UsageStats> = new Map();
 
   /** All known instances */
   private knownInstances: Map<string, ClaudeInstance> = new Map();
@@ -306,18 +313,74 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   ): void {
     const contextId = action.id;
     const animController = this.animationControllers.get(contextId);
-
-    if (animController) {
-      animController.setState(state);
-    }
-
-    // Update title with instance name or session ID prefix
-    const instanceName = settings.instanceName as string | undefined;
+    const displayMode = (settings.displayMode as DisplayMode) || "status";
     const sessionId = settings.sessionId as string | undefined;
-    const title = instanceName || (sessionId ? sessionId.substring(0, 6) : "---");
+    const usage = sessionId ? this.usageStats.get(sessionId) : undefined;
+    const instance = sessionId ? this.knownInstances.get(sessionId) : undefined;
 
-    if (action.isKey()) {
-      action.setTitle(title);
+    // Handle different display modes
+    switch (displayMode) {
+      case "tokens": {
+        // Stop animation and show static token display
+        if (animController) {
+          animController.stop();
+        }
+        const totalTokens = usage
+          ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+          : 0;
+        const tokenText = formatTokenCount(totalTokens);
+        const dataUrl = IconGenerator.generateTokenDisplay(totalTokens, state);
+        if (action.isKey()) {
+          action.setImage(dataUrl);
+          action.setTitle(tokenText);
+        }
+        return;
+      }
+
+      case "cost": {
+        // Stop animation and show static cost display
+        if (animController) {
+          animController.stop();
+        }
+        const cost = usage?.totalCost ?? 0;
+        const costText = formatCost(cost);
+        const dataUrl = IconGenerator.generateCostDisplay(cost, state);
+        if (action.isKey()) {
+          action.setImage(dataUrl);
+          action.setTitle(costText);
+        }
+        return;
+      }
+
+      case "activity": {
+        // Stop animation and show last activity
+        if (animController) {
+          animController.stop();
+        }
+        const toolName = instance?.metadata?.tool_name || "---";
+        const dataUrl = IconGenerator.generateActivityDisplay(toolName, state);
+        if (action.isKey()) {
+          action.setImage(dataUrl);
+          action.setTitle(toolName);
+        }
+        return;
+      }
+
+      case "status":
+      default: {
+        // Use animated status display (existing behavior)
+        if (animController) {
+          animController.setState(state);
+        }
+
+        // Update title with instance name or session ID prefix
+        const instanceName = settings.instanceName as string | undefined;
+        const title = instanceName || (sessionId ? sessionId.substring(0, 6) : "---");
+
+        if (action.isKey()) {
+          action.setTitle(title);
+        }
+      }
     }
   }
 
@@ -442,6 +505,12 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       if (isNewInstance) {
         this.tryAutoAssign(message.sessionId, message.metadata?.cwd);
       }
+    } else if (message.type === "usage_update") {
+      // Update usage stats for the session
+      this.usageStats.set(message.sessionId, message.usage);
+
+      // Update actions bound to this session that use tokens/cost display mode
+      this.updateBoundActionsUsage(message.sessionId);
     }
   }
 
@@ -554,6 +623,24 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       action.getSettings<ClaudeInstanceSettings>().then((settings) => {
         if (settings.sessionId === sessionId) {
           this.updateDisplay(action, state, settings);
+        }
+      });
+    }
+  }
+
+  /**
+   * Update actions bound to a specific session for usage changes
+   */
+  private updateBoundActionsUsage(sessionId: string): void {
+    for (const action of this.actions) {
+      action.getSettings<ClaudeInstanceSettings>().then((settings) => {
+        if (settings.sessionId === sessionId) {
+          const displayMode = (settings.displayMode as DisplayMode) || "status";
+          // Only update if in tokens or cost mode
+          if (displayMode === "tokens" || displayMode === "cost") {
+            const state = this.instanceStates.get(sessionId) ?? "disconnected";
+            this.updateDisplay(action, state, settings);
+          }
         }
       });
     }

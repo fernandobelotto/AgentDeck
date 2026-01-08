@@ -48,7 +48,8 @@ export interface ClaudeInstance {
 export type WebSocketMessage =
   | InitMessage
   | UpdateMessage
-  | CommandResponseMessage;
+  | CommandResponseMessage
+  | UsageUpdateMessage;
 
 export interface InitMessage {
   type: "init";
@@ -85,6 +86,11 @@ export interface CommandMessage {
 }
 
 /**
+ * Display modes for the Claude Instance action
+ */
+export type DisplayMode = "status" | "tokens" | "cost" | "activity";
+
+/**
  * Settings stored for each Stream Deck action instance
  * Uses index signature compatible with JsonObject
  */
@@ -93,7 +99,30 @@ export interface ClaudeInstanceSettings {
   instanceName?: string;
   autoAssign?: boolean;
   projectFolder?: string;
+  displayMode?: DisplayMode;
   [key: string]: string | boolean | number | null | undefined;
+}
+
+/**
+ * Token usage statistics for a session
+ */
+export interface UsageStats {
+  inputTokens: number;
+  outputTokens: number;
+  cacheReadTokens: number;
+  cacheWriteTokens: number;
+  totalCost: number; // in USD
+  model: string;
+  lastUpdate: number; // Unix timestamp
+}
+
+/**
+ * WebSocket message for usage updates
+ */
+export interface UsageUpdateMessage {
+  type: "usage_update";
+  sessionId: string;
+  usage: UsageStats;
 }
 
 /**

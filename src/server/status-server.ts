@@ -1,6 +1,7 @@
 import http from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import { InstanceManager } from "./instance-manager.js";
+import { UsageTracker } from "./usage-tracker.js";
 import { isKittyAvailable, getKittySocketPath, findWorkingSocket, getSocketCandidates, clearSocketCache } from "../utils/kitty-remote.js";
 import { pickFolder } from "../utils/folder-picker.js";
 import type {
@@ -8,7 +9,8 @@ import type {
   WebSocketMessage,
   CommandMessage,
   ClaudeState,
-  CommandType
+  CommandType,
+  UsageStats
 } from "./types.js";
 
 const STATUS_PORT = 19847;
@@ -29,12 +31,20 @@ export class StatusServer {
   private httpServer: http.Server;
   private wss: WebSocketServer;
   private instanceManager: InstanceManager;
+  private usageTracker: UsageTracker;
   private clients: Set<WebSocket> = new Set();
   private statusChangeCallbacks: Set<StatusChangeCallback> = new Set();
   private isRunning = false;
+  private trackedSessions: Set<string> = new Set();
 
   constructor() {
     this.instanceManager = new InstanceManager();
+    this.usageTracker = new UsageTracker();
+
+    // Listen for usage updates and broadcast to clients
+    this.usageTracker.on("update", (sessionId: string, usage: UsageStats) => {
+      this.broadcastUsageUpdate(sessionId, usage);
+    });
 
     // HTTP server for receiving hook POST requests
     this.httpServer = http.createServer((req, res) => {
@@ -60,6 +70,8 @@ export class StatusServer {
         this.handleKittyStatus(res);
       } else if (req.method === "POST" && req.url === "/pick-folder") {
         this.handlePickFolder(res);
+      } else if (req.method === "GET" && req.url?.startsWith("/usage/")) {
+        this.handleGetUsage(req, res);
       } else {
         res.writeHead(404);
         res.end("Not Found");
@@ -162,6 +174,34 @@ export class StatusServer {
     }
   }
 
+  private handleGetUsage(req: http.IncomingMessage, res: http.ServerResponse): void {
+    const sessionId = req.url?.replace("/usage/", "") || "";
+
+    if (!sessionId) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Missing session ID" }));
+      return;
+    }
+
+    const usage = this.usageTracker.getUsage(sessionId);
+    if (usage) {
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(usage));
+    } else {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "No usage data for session" }));
+    }
+  }
+
+  private broadcastUsageUpdate(sessionId: string, usage: UsageStats): void {
+    const message: WebSocketMessage = {
+      type: "usage_update",
+      sessionId,
+      usage
+    };
+    this.broadcastToClients(message);
+  }
+
   private handleWebSocketConnection(ws: WebSocket): void {
     this.clients.add(ws);
 
@@ -194,6 +234,12 @@ export class StatusServer {
 
   private handleStatusUpdate(update: StatusUpdate): void {
     const instance = this.instanceManager.updateInstance(update);
+
+    // Start usage tracking if we have CWD and haven't started yet
+    if (update.metadata.cwd && !this.trackedSessions.has(update.session_id)) {
+      this.trackedSessions.add(update.session_id);
+      this.usageTracker.startTracking(update.session_id, update.metadata.cwd);
+    }
 
     // Broadcast the effective state to all connected clients
     // The instance manager may have kept a sticky state instead of the incoming state
@@ -295,6 +341,10 @@ export class StatusServer {
     return new Promise((resolve) => {
       this.isRunning = false;
 
+      // Stop usage tracking
+      this.usageTracker.stopAll();
+      this.trackedSessions.clear();
+
       // Close all WebSocket connections
       this.clients.forEach((client) => {
         client.close();
@@ -308,6 +358,13 @@ export class StatusServer {
         });
       });
     });
+  }
+
+  /**
+   * Get the usage tracker
+   */
+  getUsageTracker(): UsageTracker {
+    return this.usageTracker;
   }
 
   /**

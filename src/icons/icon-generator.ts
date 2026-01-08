@@ -428,4 +428,149 @@ export class IconGenerator {
     const svg = this.generateFrame(state, frame, kittyAvailable);
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
+
+  /**
+   * Format token count for display (e.g., 12500 -> "12.5k")
+   */
+  private static formatTokens(tokens: number): string {
+    if (tokens >= 1_000_000) {
+      return `${(tokens / 1_000_000).toFixed(1)}M`;
+    }
+    if (tokens >= 1_000) {
+      return `${(tokens / 1_000).toFixed(1)}k`;
+    }
+    return tokens.toString();
+  }
+
+  /**
+   * Generate a token counter display icon
+   * @param tokens - Total token count
+   * @param state - Current Claude state (for status indicator color)
+   */
+  static generateTokenDisplay(tokens: number, state: ClaudeState): string {
+    const config = STATE_CONFIGS[state];
+    const tokenText = this.formatTokens(tokens);
+    const textColor = "#60A5FA"; // Blue for tokens
+
+    const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="${this.SIZE}" height="${this.SIZE}" fill="${ANTHROPIC.black}" rx="16"/>
+
+  <!-- Token icon (small) -->
+  <g transform="translate(72, 35)">
+    <circle cx="0" cy="0" r="16" fill="${textColor}" opacity="0.2"/>
+    <text x="0" y="5" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="bold" fill="${textColor}" text-anchor="middle">T</text>
+  </g>
+
+  <!-- Token count (large) -->
+  <text x="72" y="90" font-family="system-ui, -apple-system, sans-serif" font-size="32" font-weight="bold" fill="${ANTHROPIC.cream}" text-anchor="middle">${tokenText}</text>
+
+  <!-- Label -->
+  <text x="72" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="${ANTHROPIC.gray}" text-anchor="middle">tokens</text>
+
+  <!-- Status indicator -->
+  <circle cx="118" cy="22" r="10" fill="${config.primaryColor}" opacity="0.9"/>
+  <circle cx="118" cy="22" r="6" fill="${ANTHROPIC.black}"/>
+  <circle cx="118" cy="22" r="4" fill="${config.primaryColor}"/>
+</svg>`;
+
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  /**
+   * Generate a cost tracker display icon
+   * @param cost - Total cost in USD
+   * @param state - Current Claude state (for status indicator color)
+   */
+  static generateCostDisplay(cost: number, state: ClaudeState): string {
+    const config = STATE_CONFIGS[state];
+    const costText = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
+    const textColor = "#4ADE80"; // Green for cost
+
+    const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="${this.SIZE}" height="${this.SIZE}" fill="${ANTHROPIC.black}" rx="16"/>
+
+  <!-- Dollar icon (small) -->
+  <g transform="translate(72, 35)">
+    <circle cx="0" cy="0" r="16" fill="${textColor}" opacity="0.2"/>
+    <text x="0" y="6" font-family="system-ui, -apple-system, sans-serif" font-size="18" font-weight="bold" fill="${textColor}" text-anchor="middle">$</text>
+  </g>
+
+  <!-- Cost (large) -->
+  <text x="72" y="90" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" fill="${ANTHROPIC.cream}" text-anchor="middle">${costText}</text>
+
+  <!-- Label -->
+  <text x="72" y="115" font-family="system-ui, -apple-system, sans-serif" font-size="14" fill="${ANTHROPIC.gray}" text-anchor="middle">cost</text>
+
+  <!-- Status indicator -->
+  <circle cx="118" cy="22" r="10" fill="${config.primaryColor}" opacity="0.9"/>
+  <circle cx="118" cy="22" r="6" fill="${ANTHROPIC.black}"/>
+  <circle cx="118" cy="22" r="4" fill="${config.primaryColor}"/>
+</svg>`;
+
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  /**
+   * Get activity icon and color based on tool name
+   */
+  private static getActivityStyle(toolName: string): { icon: string; color: string } {
+    const toolLower = toolName.toLowerCase();
+
+    if (toolLower.includes("edit") || toolLower.includes("write")) {
+      return { icon: "E", color: "#A78BFA" }; // Purple for edit
+    }
+    if (toolLower.includes("bash") || toolLower.includes("shell")) {
+      return { icon: ">", color: "#60A5FA" }; // Blue for bash
+    }
+    if (toolLower.includes("read") || toolLower.includes("glob") || toolLower.includes("grep")) {
+      return { icon: "S", color: "#F59E0B" }; // Amber for search/read
+    }
+    if (toolLower.includes("web") || toolLower.includes("fetch")) {
+      return { icon: "W", color: "#14B8A6" }; // Teal for web
+    }
+    if (toolLower.includes("task") || toolLower.includes("agent")) {
+      return { icon: "A", color: "#EC4899" }; // Pink for agent
+    }
+    if (toolLower.includes("todo")) {
+      return { icon: "T", color: "#06B6D4" }; // Cyan for todo
+    }
+
+    return { icon: "?", color: ANTHROPIC.gray }; // Default
+  }
+
+  /**
+   * Generate an activity log display icon
+   * @param toolName - Name of the last tool used
+   * @param state - Current Claude state (for status indicator color)
+   */
+  static generateActivityDisplay(toolName: string, state: ClaudeState): string {
+    const config = STATE_CONFIGS[state];
+    const { icon, color } = this.getActivityStyle(toolName);
+
+    // Truncate tool name if too long
+    const displayName = toolName.length > 10 ? toolName.substring(0, 9) + "…" : toolName;
+
+    const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="${this.SIZE}" height="${this.SIZE}" fill="${ANTHROPIC.black}" rx="16"/>
+
+  <!-- Activity icon (large) -->
+  <g transform="translate(72, 55)">
+    <circle cx="0" cy="0" r="28" fill="${color}" opacity="0.2"/>
+    <text x="0" y="12" font-family="monospace" font-size="36" font-weight="bold" fill="${color}" text-anchor="middle">${icon}</text>
+  </g>
+
+  <!-- Tool name -->
+  <text x="72" y="110" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="500" fill="${ANTHROPIC.cream}" text-anchor="middle">${displayName}</text>
+
+  <!-- Status indicator -->
+  <circle cx="118" cy="22" r="10" fill="${config.primaryColor}" opacity="0.9"/>
+  <circle cx="118" cy="22" r="6" fill="${ANTHROPIC.black}"/>
+  <circle cx="118" cy="22" r="4" fill="${config.primaryColor}"/>
+</svg>`;
+
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
 }
