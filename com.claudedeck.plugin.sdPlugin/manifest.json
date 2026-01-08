@@ -15,6 +15,19 @@
           "Image": "imgs/action"
         }
       ]
+    },
+    {
+      "Name": "Gemini Instance",
+      "UUID": "com.claudedeck.plugin.gemini-instance",
+      "Icon": "imgs/gemini-action",
+      "Tooltip": "Monitor and control a Gemini CLI instance",
+      "PropertyInspectorPath": "ui/gemini-instance.html",
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "imgs/gemini-action"
+        }
+      ]
     }
   ],
   "Category": "ClaudeDeck",

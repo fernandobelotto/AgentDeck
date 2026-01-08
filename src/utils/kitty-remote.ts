@@ -434,13 +434,19 @@ function buildMatchString(match: KittyWindowMatch): string | null {
 // ============================================================================
 
 /**
- * Find a Kitty window that matches a Claude Code instance
- * Matching priority:
- * 1. Title containing "Claude:[sessionId]" (most reliable - set by hooks)
- * 2. CWD match (fallback)
- * 3. Cmdline containing "claude" (last resort)
+ * Agent type for window matching and launching
  */
-export async function findClaudeWindow(
+export type AgentType = "Claude" | "Gemini";
+
+/**
+ * Find a Kitty window that matches a CLI agent instance
+ * Matching priority:
+ * 1. Title containing "[Agent]:[sessionId]" (most reliable - set by hooks)
+ * 2. CWD match (fallback)
+ * 3. Cmdline containing agent name (last resort)
+ */
+export async function findAgentWindow(
+  agentType: AgentType,
   sessionId?: string,
   cwd?: string,
   options?: KittyRemoteOptions
@@ -467,12 +473,12 @@ export async function findClaudeWindow(
     return null;
   }
 
-  // Priority 1: Match by title containing "Claude:[sessionId]" (most reliable)
-  // The hooks set window titles with format "Claude:[session]:project - state"
+  // Priority 1: Match by title containing "[Agent]:[sessionId]" (most reliable)
+  // The hooks set window titles with format "[Agent]:[session]:project - state"
   if (sessionId) {
     const shortSession = sessionId.substring(0, 8);
     const titleMatch = allWindows.find(w =>
-      w.title.includes(`Claude:${shortSession}`)
+      w.title.includes(`${agentType}:${shortSession}`)
     );
     if (titleMatch) {
       return titleMatch;
@@ -491,9 +497,10 @@ export async function findClaudeWindow(
     }
   }
 
-  // Priority 3: Match by cmdline containing "claude" (last resort)
+  // Priority 3: Match by cmdline containing agent name (last resort)
+  const agentCmd = agentType.toLowerCase();
   const cmdlineMatch = allWindows.find(w =>
-    w.cmdline.some(arg => arg.toLowerCase().includes("claude"))
+    w.cmdline.some(arg => arg.toLowerCase().includes(agentCmd))
   );
   if (cmdlineMatch) {
     return cmdlineMatch;
@@ -503,16 +510,43 @@ export async function findClaudeWindow(
 }
 
 /**
- * Focus the terminal window running Claude Code and scroll to bottom
+ * Find a Kitty window that matches a Claude Code instance
+ * Matching priority:
+ * 1. Title containing "Claude:[sessionId]" (most reliable - set by hooks)
+ * 2. CWD match (fallback)
+ * 3. Cmdline containing "claude" (last resort)
  */
-export async function focusClaudeWindow(
+export async function findClaudeWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<KittyWindow | null> {
+  return findAgentWindow("Claude", sessionId, cwd, options);
+}
+
+/**
+ * Find a Kitty window that matches a Gemini CLI instance
+ */
+export async function findGeminiWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<KittyWindow | null> {
+  return findAgentWindow("Gemini", sessionId, cwd, options);
+}
+
+/**
+ * Focus the terminal window running a CLI agent and scroll to bottom
+ */
+export async function focusAgentWindow(
+  agentType: AgentType,
   sessionId?: string,
   cwd?: string,
   options?: KittyRemoteOptions
 ): Promise<boolean> {
-  const window = await findClaudeWindow(sessionId, cwd, options);
+  const window = await findAgentWindow(agentType, sessionId, cwd, options);
   if (!window) {
-    console.warn("Could not find Claude Code window in Kitty");
+    console.warn(`Could not find ${agentType} window in Kitty`);
     return false;
   }
   const focused = await focusWindow({ id: window.id }, options);
@@ -524,37 +558,83 @@ export async function focusClaudeWindow(
 }
 
 /**
- * Send Enter key (approve signal)
+ * Focus the terminal window running Claude Code and scroll to bottom
+ */
+export async function focusClaudeWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  return focusAgentWindow("Claude", sessionId, cwd, options);
+}
+
+/**
+ * Focus the terminal window running Gemini CLI and scroll to bottom
+ */
+export async function focusGeminiWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  return focusAgentWindow("Gemini", sessionId, cwd, options);
+}
+
+/**
+ * Send Enter key (approve signal) to an agent
  * Uses send-key for better TUI app compatibility
+ */
+export async function sendAgentApproveSignal(
+  agentType: AgentType,
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  const window = await findAgentWindow(agentType, sessionId, cwd, options);
+  if (!window) {
+    return false;
+  }
+  // Use send-key instead of send-text for TUI apps
+  return sendKey("enter", { id: window.id }, options);
+}
+
+/**
+ * Send Enter key (approve signal) - defaults to Claude for backward compatibility
  */
 export async function sendApproveSignal(
   sessionId?: string,
   cwd?: string,
   options?: KittyRemoteOptions
 ): Promise<boolean> {
-  const window = await findClaudeWindow(sessionId, cwd, options);
-  if (!window) {
-    return false;
-  }
-  // Use send-key instead of send-text for TUI apps like Claude Code
-  return sendKey("enter", { id: window.id }, options);
+  return sendAgentApproveSignal("Claude", sessionId, cwd, options);
 }
 
 /**
- * Send Ctrl+C (cancel signal)
+ * Send Ctrl+C (cancel signal) to an agent
  * Uses send-key for better TUI app compatibility
+ */
+export async function sendAgentCancelSignal(
+  agentType: AgentType,
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  const window = await findAgentWindow(agentType, sessionId, cwd, options);
+  if (!window) {
+    return false;
+  }
+  // Use send-key ctrl+c for TUI apps
+  return sendKey("ctrl+c", { id: window.id }, options);
+}
+
+/**
+ * Send Ctrl+C (cancel signal) - defaults to Claude for backward compatibility
  */
 export async function sendCancelSignal(
   sessionId?: string,
   cwd?: string,
   options?: KittyRemoteOptions
 ): Promise<boolean> {
-  const window = await findClaudeWindow(sessionId, cwd, options);
-  if (!window) {
-    return false;
-  }
-  // Use send-key ctrl+c for TUI apps
-  return sendKey("ctrl+c", { id: window.id }, options);
+  return sendAgentCancelSignal("Claude", sessionId, cwd, options);
 }
 
 /** Last error from launchClaudeWindow for debugging */
@@ -643,6 +723,49 @@ export async function launchClaudeWindow(
     }
     // Use interactive shell to ensure aliases are available
     args.push("--", shell, "-i", "-c", "claude");
+
+    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+    await execAsync(cmd, { timeout: 5000 });
+    // Return -1 to indicate success via direct launch (no window ID available)
+    return -1;
+  } catch (error) {
+    lastLaunchError = `Both remote and direct launch failed. Remote: ${lastLaunchError}. Direct: ${error}`;
+    return null;
+  }
+}
+
+/**
+ * Launch a new Gemini CLI instance in Kitty
+ * First tries remote control, falls back to launching Kitty directly
+ */
+export async function launchGeminiWindow(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  lastLaunchError = null;
+  const socketPath = getKittySocketPath();
+
+  // Try remote control first (if Kitty is already running)
+  try {
+    const windowId = await launchWindow("gemini", cwd, options);
+    if (windowId !== null) {
+      return windowId;
+    }
+    lastLaunchError = `Remote launch returned null, socket: ${socketPath}`;
+  } catch (err) {
+    lastLaunchError = `Remote launch failed: ${err}, socket: ${socketPath}`;
+  }
+
+  // Fallback: Launch Kitty directly if remote control failed
+  try {
+    const kittyBin = getKittyBinary("kitty");
+    const shell = process.env.SHELL || "/bin/zsh";
+    const args: string[] = [];
+    if (cwd) {
+      args.push("--directory", cwd);
+    }
+    // Use interactive shell to ensure aliases are available
+    args.push("--", shell, "-i", "-c", "gemini");
 
     const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
     await execAsync(cmd, { timeout: 5000 });

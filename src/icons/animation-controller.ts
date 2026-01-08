@@ -1,5 +1,5 @@
 import { IconGenerator } from "./icon-generator.js";
-import type { ClaudeState } from "../server/types.js";
+import type { ClaudeState, InstanceSource } from "../server/types.js";
 
 export type FrameUpdateCallback = (dataUrl: string) => void;
 
@@ -13,14 +13,16 @@ export class AnimationController {
   private onFrameUpdate: FrameUpdateCallback;
   private isRunning: boolean = false;
   private kittyAvailable: boolean | undefined = undefined;
+  private source: InstanceSource;
 
   /** Animation frame rate (frames per second) - 12 FPS for smooth, calm animations */
   private static readonly FPS = 12;
   /** Frame interval in milliseconds */
   private static readonly FRAME_INTERVAL_MS = 1000 / AnimationController.FPS;
 
-  constructor(onFrameUpdate: FrameUpdateCallback) {
+  constructor(onFrameUpdate: FrameUpdateCallback, source: InstanceSource = "claude") {
     this.onFrameUpdate = onFrameUpdate;
+    this.source = source;
   }
 
   /**
@@ -113,7 +115,7 @@ export class AnimationController {
    * Update the current frame
    */
   private updateFrame(): void {
-    const dataUrl = IconGenerator.generateDataUrl(this.currentState, this.currentFrame, this.kittyAvailable);
+    const dataUrl = IconGenerator.generateDataUrl(this.currentState, this.currentFrame, this.kittyAvailable, this.source);
     this.onFrameUpdate(dataUrl);
   }
 

@@ -1,5 +1,11 @@
 /**
+ * Source of the AI agent instance (which CLI tool)
+ */
+export type InstanceSource = "claude" | "gemini";
+
+/**
  * Claude Code instance states that can be visualized on the Stream Deck
+ * Also used by Gemini CLI instances
  */
 export type ClaudeState =
   | "idle"
@@ -19,6 +25,7 @@ export interface StatusUpdate {
   state: ClaudeState;
   hook_event: string;
   metadata: StatusMetadata;
+  source?: InstanceSource; // defaults to "claude" for backward compatibility
 }
 
 /**
@@ -32,7 +39,7 @@ export interface StatusMetadata {
 }
 
 /**
- * Tracked Claude Code instance
+ * Tracked Claude Code instance (also used for Gemini CLI)
  */
 export interface ClaudeInstance {
   sessionId: string;
@@ -40,6 +47,7 @@ export interface ClaudeInstance {
   metadata: StatusMetadata;
   lastUpdate: number;
   name?: string;
+  source: InstanceSource;
 }
 
 /**
@@ -61,6 +69,7 @@ export interface UpdateMessage {
   sessionId: string;
   state: ClaudeState;
   metadata: StatusMetadata;
+  source: InstanceSource;
 }
 
 export interface CommandResponseMessage {
@@ -104,6 +113,19 @@ export interface ClaudeInstanceSettings {
 }
 
 /**
+ * Settings stored for each Gemini Stream Deck action instance
+ * Uses index signature compatible with JsonObject
+ */
+export interface GeminiInstanceSettings {
+  sessionId?: string;
+  instanceName?: string;
+  autoAssign?: boolean;
+  projectFolder?: string;
+  displayMode?: DisplayMode;
+  [key: string]: string | boolean | number | null | undefined;
+}
+
+/**
  * Token usage statistics for a session
  */
 export interface UsageStats {
@@ -123,6 +145,7 @@ export interface UsageUpdateMessage {
   type: "usage_update";
   sessionId: string;
   usage: UsageStats;
+  source?: InstanceSource;
 }
 
 /**

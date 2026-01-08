@@ -1,0 +1,67 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "type": "command",
+        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+      }
+    ],
+    "SessionEnd": [
+      {
+        "type": "command",
+        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+      }
+    ],
+    "BeforeAgent": [
+      {
+        "type": "command",
+        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+      }
+    ],
+    "AfterAgent": [
+      {
+        "type": "command",
+        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "ToolPermission",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+          }
+        ]
+      }
+    ],
+    "PreCompress": [
+      {
+        "type": "command",
+        "command": "~/.claudedeck/hooks/gemini-status-reporter.sh"
+      }
+    ]
+  }
+}

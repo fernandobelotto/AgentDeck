@@ -495,7 +495,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         state: message.state,
         metadata: message.metadata,
         lastUpdate: Date.now(),
-        name: existing?.name
+        name: existing?.name,
+        source: message.source ?? "claude"
       });
 
       // Update actions bound to this session

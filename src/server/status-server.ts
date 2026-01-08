@@ -2,6 +2,7 @@ import http from "node:http";
 import { WebSocketServer, WebSocket } from "ws";
 import { InstanceManager } from "./instance-manager.js";
 import { UsageTracker } from "./usage-tracker.js";
+import { GeminiUsageTracker } from "./gemini-usage-tracker.js";
 import { isKittyAvailable, getKittySocketPath, findWorkingSocket, getSocketCandidates, clearSocketCache } from "../utils/kitty-remote.js";
 import { pickFolder } from "../utils/folder-picker.js";
 import type {
@@ -10,7 +11,8 @@ import type {
   CommandMessage,
   ClaudeState,
   CommandType,
-  UsageStats
+  UsageStats,
+  InstanceSource
 } from "./types.js";
 
 const STATUS_PORT = 19847;
@@ -32,18 +34,26 @@ export class StatusServer {
   private wss: WebSocketServer;
   private instanceManager: InstanceManager;
   private usageTracker: UsageTracker;
+  private geminiUsageTracker: GeminiUsageTracker;
   private clients: Set<WebSocket> = new Set();
   private statusChangeCallbacks: Set<StatusChangeCallback> = new Set();
   private isRunning = false;
   private trackedSessions: Set<string> = new Set();
+  private trackedGeminiSessions: Set<string> = new Set();
 
   constructor() {
     this.instanceManager = new InstanceManager();
     this.usageTracker = new UsageTracker();
+    this.geminiUsageTracker = new GeminiUsageTracker();
 
     // Listen for usage updates and broadcast to clients
     this.usageTracker.on("update", (sessionId: string, usage: UsageStats) => {
-      this.broadcastUsageUpdate(sessionId, usage);
+      this.broadcastUsageUpdate(sessionId, usage, "claude");
+    });
+
+    // Listen for Gemini usage updates
+    this.geminiUsageTracker.on("update", (sessionId: string, usage: UsageStats) => {
+      this.broadcastUsageUpdate(sessionId, usage, "gemini");
     });
 
     // HTTP server for receiving hook POST requests
@@ -123,6 +133,7 @@ export class StatusServer {
     const url = new URL(req.url || "/instances", "http://127.0.0.1");
     const cleanup = url.searchParams.get("cleanup") === "true";
     const dedupe = url.searchParams.get("dedupe") === "true";
+    const source = url.searchParams.get("source") as InstanceSource | null;
 
     // Run cleanup if requested (removes instances inactive for 30+ seconds)
     if (cleanup) {
@@ -134,8 +145,13 @@ export class StatusServer {
       this.instanceManager.deduplicateByCwd();
     }
 
+    // Get instances, optionally filtered by source
+    const instances = source
+      ? this.instanceManager.getAvailableInstancesBySource(source)
+      : this.instanceManager.getAvailableInstances();
+
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(this.instanceManager.getAvailableInstances()));
+    res.end(JSON.stringify(instances));
   }
 
   private async handleKittyStatus(res: http.ServerResponse): Promise<void> {
@@ -175,7 +191,10 @@ export class StatusServer {
   }
 
   private handleGetUsage(req: http.IncomingMessage, res: http.ServerResponse): void {
-    const sessionId = req.url?.replace("/usage/", "") || "";
+    const url = new URL(req.url || "/usage/", "http://127.0.0.1");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const sessionId = pathParts[1] || "";
+    const source = url.searchParams.get("source") as InstanceSource | null;
 
     if (!sessionId) {
       res.writeHead(400, { "Content-Type": "application/json" });
@@ -183,7 +202,17 @@ export class StatusServer {
       return;
     }
 
-    const usage = this.usageTracker.getUsage(sessionId);
+    // Try the specified source first, then fall back to the other
+    let usage: UsageStats | undefined;
+    if (source === "gemini") {
+      usage = this.geminiUsageTracker.getUsage(sessionId);
+    } else if (source === "claude") {
+      usage = this.usageTracker.getUsage(sessionId);
+    } else {
+      // Try both if source not specified
+      usage = this.usageTracker.getUsage(sessionId) || this.geminiUsageTracker.getUsage(sessionId);
+    }
+
     if (usage) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(usage));
@@ -193,11 +222,12 @@ export class StatusServer {
     }
   }
 
-  private broadcastUsageUpdate(sessionId: string, usage: UsageStats): void {
+  private broadcastUsageUpdate(sessionId: string, usage: UsageStats, source: InstanceSource = "claude"): void {
     const message: WebSocketMessage = {
       type: "usage_update",
       sessionId,
-      usage
+      usage,
+      source
     };
     this.broadcastToClients(message);
   }
@@ -234,11 +264,17 @@ export class StatusServer {
 
   private handleStatusUpdate(update: StatusUpdate): void {
     const instance = this.instanceManager.updateInstance(update);
+    const source = update.source ?? "claude";
 
     // Start usage tracking if we have CWD and haven't started yet
-    if (update.metadata.cwd && !this.trackedSessions.has(update.session_id)) {
-      this.trackedSessions.add(update.session_id);
-      this.usageTracker.startTracking(update.session_id, update.metadata.cwd);
+    if (update.metadata.cwd) {
+      if (source === "claude" && !this.trackedSessions.has(update.session_id)) {
+        this.trackedSessions.add(update.session_id);
+        this.usageTracker.startTracking(update.session_id, update.metadata.cwd);
+      } else if (source === "gemini" && !this.trackedGeminiSessions.has(update.session_id)) {
+        this.trackedGeminiSessions.add(update.session_id);
+        this.geminiUsageTracker.startTracking(update.session_id, update.metadata.cwd);
+      }
     }
 
     // Broadcast the effective state to all connected clients
@@ -247,7 +283,8 @@ export class StatusServer {
       type: "update",
       sessionId: update.session_id,
       state: instance.state,
-      metadata: update.metadata
+      metadata: update.metadata,
+      source: instance.source
     };
 
     this.broadcastToClients(message);
@@ -343,7 +380,9 @@ export class StatusServer {
 
       // Stop usage tracking
       this.usageTracker.stopAll();
+      this.geminiUsageTracker.stopAll();
       this.trackedSessions.clear();
+      this.trackedGeminiSessions.clear();
 
       // Close all WebSocket connections
       this.clients.forEach((client) => {
@@ -361,10 +400,17 @@ export class StatusServer {
   }
 
   /**
-   * Get the usage tracker
+   * Get the usage tracker (Claude)
    */
   getUsageTracker(): UsageTracker {
     return this.usageTracker;
+  }
+
+  /**
+   * Get the Gemini usage tracker
+   */
+  getGeminiUsageTracker(): GeminiUsageTracker {
+    return this.geminiUsageTracker;
   }
 
   /**

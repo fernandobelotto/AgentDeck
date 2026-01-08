@@ -1,4 +1,4 @@
-import type { ClaudeState } from "../server/types.js";
+import type { ClaudeState, InstanceSource } from "../server/types.js";
 
 type AnimationType = 'none' | 'orbit' | 'ripple' | 'float' | 'pulse' | 'wave';
 
@@ -12,7 +12,7 @@ interface StateConfig {
   label: string;
 }
 
-// Anthropic color palette
+// Anthropic color palette (Claude)
 const ANTHROPIC = {
   black: "#141413",      // Primary background
   cream: "#FAF9F5",      // Light text/accents
@@ -21,7 +21,17 @@ const ANTHROPIC = {
   gray: "#30302E",       // Tertiary gray
 };
 
-const STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
+// Google color palette (Gemini)
+const GOOGLE = {
+  black: "#141413",      // Same background for consistency
+  cream: "#FAF9F5",      // Same light text
+  blue: "#4285F4",       // Google Blue (Gemini brand)
+  darkGray: "#1F1E1D",   // Same secondary dark
+  gray: "#30302E",       // Same tertiary gray
+};
+
+// Claude state configs
+const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   idle: {
     primaryColor: ANTHROPIC.orange,
     secondaryColor: "#C4684D",
@@ -96,8 +106,98 @@ const STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   }
 };
 
+// Gemini state configs - Google Blue themed
+const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
+  idle: {
+    primaryColor: GOOGLE.blue,
+    secondaryColor: "#3367D6",
+    glowColor: "#4285F440",
+    icon: "gemini",  // Gemini sparkle icon
+    animationType: 'none',
+    animationFrames: 1,
+    label: "Ready"
+  },
+  running: {
+    primaryColor: "#60A5FA",
+    secondaryColor: "#3B82F6",
+    glowColor: "#60A5FA50",
+    icon: "loader",
+    animationType: 'orbit',
+    animationFrames: 96,
+    label: "Running"
+  },
+  tool_use: {
+    primaryColor: GOOGLE.blue,
+    secondaryColor: "#3367D6",
+    glowColor: "#4285F450",
+    icon: "wrench",
+    animationType: 'ripple',
+    animationFrames: 72,
+    label: "Tool"
+  },
+  editing: {
+    primaryColor: "#7C4DFF",  // Purple-blue for Gemini editing
+    secondaryColor: "#651FFF",
+    glowColor: "#7C4DFF50",
+    icon: "pencil",
+    animationType: 'float',
+    animationFrames: 84,
+    label: "Edit"
+  },
+  question: {
+    primaryColor: GOOGLE.cream,
+    secondaryColor: "#E8E7E3",
+    glowColor: "#FAF9F560",
+    icon: "help",
+    animationType: 'pulse',
+    animationFrames: 48,
+    label: "Input"
+  },
+  permission: {
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+    glowColor: "#F8717170",
+    icon: "shield",
+    animationType: 'wave',
+    animationFrames: 60,
+    label: "Approve?"
+  },
+  error: {
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+    glowColor: "#F8717140",
+    icon: "alert",
+    animationType: 'none',
+    animationFrames: 1,
+    label: "Error"
+  },
+  disconnected: {
+    primaryColor: GOOGLE.gray,
+    secondaryColor: GOOGLE.darkGray,
+    glowColor: "#30302E30",
+    icon: "unplug",
+    animationType: 'none',
+    animationFrames: 1,
+    label: "Offline"
+  }
+};
+
+// Helper to get state config based on source
+function getStateConfigs(source: InstanceSource = "claude"): Record<ClaudeState, StateConfig> {
+  return source === "gemini" ? GEMINI_STATE_CONFIGS : CLAUDE_STATE_CONFIGS;
+}
+
+// Legacy alias for backward compatibility
+const STATE_CONFIGS = CLAUDE_STATE_CONFIGS;
+
 // Icon paths (scaled to fit 144x144 canvas centered at 72,72)
 const LUCIDE_ICONS: Record<string, string> = {
+  // Gemini sparkle icon - four-pointed star
+  gemini: `
+    <path d="M12 2L14.09 8.26L20 12L14.09 15.74L12 22L9.91 15.74L4 12L9.91 8.26L12 2Z"
+          transform="scale(2.4) translate(-12, -12)"
+          fill="currentColor"/>`,
+
   // Claude starburst logo - scaled from 24x24 viewBox
   claude: `
     <path d="M4.709 15.955l4.72-2.647.08-.23-.08-.128H9.2l-.79-.048-2.698-.073-2.339-.097-2.266-.122-.571-.121L0 11.784l.055-.352.48-.321.686.06 1.52.103 2.278.158 1.652.097 2.449.255h.389l.055-.157-.134-.098-.103-.097-2.358-1.596-2.552-1.688-1.336-.972-.724-.491-.364-.462-.158-1.008.656-.722.881.06.225.061.893.686 1.908 1.476 2.491 1.833.365.304.145-.103.019-.073-.164-.274-1.355-2.446-1.446-2.49-.644-1.032-.17-.619a2.97 2.97 0 01-.104-.729L6.283.134 6.696 0l.996.134.42.364.62 1.414 1.002 2.229 1.555 3.03.456.898.243.832.091.255h.158V9.01l.128-1.706.237-2.095.23-2.695.08-.76.376-.91.747-.492.584.28.48.685-.067.444-.286 1.851-.559 2.903-.364 1.942h.212l.243-.242.985-1.306 1.652-2.064.73-.82.85-.904.547-.431h1.033l.76 1.129-.34 1.166-1.064 1.347-.881 1.142-1.264 1.7-.79 1.36.073.11.188-.02 2.856-.606 1.543-.28 1.841-.315.833.388.091.395-.328.807-1.969.486-2.309.462-3.439.813-.042.03.049.061 1.549.146.662.036h1.622l3.02.225.79.522.474.638-.079.485-1.215.62-1.64-.389-3.829-.91-1.312-.329h-.182v.11l1.093 1.068 2.006 1.81 2.509 2.33.127.578-.322.455-.34-.049-2.205-1.657-.851-.747-1.926-1.62h-.128v.17l.444.649 2.345 3.521.122 1.08-.17.353-.608.213-.668-.122-1.374-1.925-1.415-2.167-1.143-1.943-.14.08-.674 7.254-.316.37-.729.28-.607-.461-.322-.747.322-1.476.389-1.924.315-1.53.286-1.9.17-.632-.012-.042-.14.018-1.434 1.967-2.18 2.945-1.726 1.845-.414.164-.717-.37.067-.662.401-.589 2.388-3.036 1.44-1.882.93-1.086-.006-.158h-.055L4.132 18.56l-1.13.146-.487-.456.061-.746.231-.243 1.908-1.312-.006.006z"
@@ -322,9 +422,11 @@ export class IconGenerator {
    * @param state - The Claude state to render
    * @param frame - Animation frame number (default 0)
    * @param kittyAvailable - Whether Kitty remote control is available (shows green/red indicator)
+   * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean): string {
-    const config = STATE_CONFIGS[state];
+  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude"): string {
+    const stateConfigs = getStateConfigs(source);
+    const config = stateConfigs[state];
     const iconPath = LUCIDE_ICONS[config.icon] || LUCIDE_ICONS.check;
 
     // Subtle rotation for animated states (loader only)
@@ -423,9 +525,10 @@ export class IconGenerator {
    * @param state - The Claude state to render
    * @param frame - Animation frame number (default 0)
    * @param kittyAvailable - Whether Kitty remote control is available
+   * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean): string {
-    const svg = this.generateFrame(state, frame, kittyAvailable);
+  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude"): string {
+    const svg = this.generateFrame(state, frame, kittyAvailable, source);
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
 
@@ -446,9 +549,11 @@ export class IconGenerator {
    * Generate a token counter display icon
    * @param tokens - Total token count
    * @param state - Current Claude state (for status indicator color)
+   * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateTokenDisplay(tokens: number, state: ClaudeState): string {
-    const config = STATE_CONFIGS[state];
+  static generateTokenDisplay(tokens: number, state: ClaudeState, source: InstanceSource = "claude"): string {
+    const stateConfigs = getStateConfigs(source);
+    const config = stateConfigs[state];
     const tokenText = this.formatTokens(tokens);
     const textColor = "#60A5FA"; // Blue for tokens
 
@@ -481,9 +586,11 @@ export class IconGenerator {
    * Generate a cost tracker display icon
    * @param cost - Total cost in USD
    * @param state - Current Claude state (for status indicator color)
+   * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateCostDisplay(cost: number, state: ClaudeState): string {
-    const config = STATE_CONFIGS[state];
+  static generateCostDisplay(cost: number, state: ClaudeState, source: InstanceSource = "claude"): string {
+    const stateConfigs = getStateConfigs(source);
+    const config = stateConfigs[state];
     const costText = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
     const textColor = "#4ADE80"; // Green for cost
 
@@ -544,9 +651,11 @@ export class IconGenerator {
    * Generate an activity log display icon
    * @param toolName - Name of the last tool used
    * @param state - Current Claude state (for status indicator color)
+   * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateActivityDisplay(toolName: string, state: ClaudeState): string {
-    const config = STATE_CONFIGS[state];
+  static generateActivityDisplay(toolName: string, state: ClaudeState, source: InstanceSource = "claude"): string {
+    const stateConfigs = getStateConfigs(source);
+    const config = stateConfigs[state];
     const { icon, color } = this.getActivityStyle(toolName);
 
     // Truncate tool name if too long

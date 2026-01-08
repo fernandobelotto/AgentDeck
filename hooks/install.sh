@@ -1,35 +1,41 @@
 #!/bin/bash
 # ClaudeDeck Hook Installation Script
 #
-# This script installs the ClaudeDeck hooks for Claude Code.
-# It copies the status-reporter.sh script to ~/.claudedeck/hooks/
-# and provides instructions for configuring Claude Code.
+# This script installs the ClaudeDeck hooks for Claude Code and Gemini CLI.
+# It copies the status-reporter.sh and gemini-status-reporter.sh scripts to ~/.claudedeck/hooks/
+# and provides instructions for configuring both tools.
 #
-# IMPORTANT: This script does NOT modify your ~/.claude/settings.json
+# IMPORTANT: This script does NOT modify your settings files.
 # You must manually add the hooks configuration to preserve your existing settings.
-# See the hooks/hooks.json file for the configuration to add.
+# See the hooks/hooks.json and hooks/gemini-hooks.json files for the configurations to add.
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 INSTALL_DIR="$HOME/.claudedeck/hooks"
 CLAUDE_SETTINGS="$HOME/.claude/settings.json"
+GEMINI_SETTINGS="$HOME/.gemini/settings.json"
 
 echo "ClaudeDeck Hook Installation"
 echo "============================"
 echo ""
-echo "NOTE: This script will NOT modify your Claude Code settings."
-echo "It only copies the hook script and provides manual setup instructions."
+echo "NOTE: This script will NOT modify your settings files."
+echo "It only copies the hook scripts and provides manual setup instructions."
 echo ""
 
 # Create installation directory
 echo "Creating installation directory: $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 
-# Copy the status reporter script
-echo "Installing status-reporter.sh..."
+# Copy the Claude status reporter script
+echo "Installing status-reporter.sh (Claude Code)..."
 cp "$SCRIPT_DIR/status-reporter.sh" "$INSTALL_DIR/"
 chmod +x "$INSTALL_DIR/status-reporter.sh"
+
+# Copy the Gemini status reporter script
+echo "Installing gemini-status-reporter.sh (Gemini CLI)..."
+cp "$SCRIPT_DIR/gemini-status-reporter.sh" "$INSTALL_DIR/"
+chmod +x "$INSTALL_DIR/gemini-status-reporter.sh"
 
 echo ""
 echo "Hook script installed successfully!"
@@ -52,17 +58,19 @@ fi
 
 # Provide instructions for Claude Code configuration
 echo "Next Steps"
-echo "----------"
+echo "=========="
 echo ""
-echo "You need to add the ClaudeDeck hooks to your Claude Code configuration."
+echo "1. CLAUDE CODE SETUP"
+echo "--------------------"
+echo "Add the ClaudeDeck hooks to your Claude Code configuration."
 echo ""
 
 if [[ -f "$CLAUDE_SETTINGS" ]]; then
     echo "Found existing Claude settings at: $CLAUDE_SETTINGS"
     echo ""
     echo "You can either:"
-    echo "1. Manually merge the hooks from hooks.json into your settings.json"
-    echo "2. Use the command below to open both files for comparison"
+    echo "a. Manually merge the hooks from hooks.json into your settings.json"
+    echo "b. Use the command below to open both files for comparison"
     echo ""
 
     if command -v code &> /dev/null; then
@@ -82,10 +90,40 @@ fi
 
 echo ""
 echo ""
-echo "After configuring the hooks, restart any running Claude Code instances"
-echo "to pick up the new hook configuration."
+echo "2. GEMINI CLI SETUP (Optional)"
+echo "------------------------------"
+echo "Add the ClaudeDeck hooks to your Gemini CLI configuration."
+echo ""
+
+if [[ -f "$GEMINI_SETTINGS" ]]; then
+    echo "Found existing Gemini settings at: $GEMINI_SETTINGS"
+    echo ""
+    echo "You can either:"
+    echo "a. Manually merge the hooks from gemini-hooks.json into your settings.json"
+    echo "b. Use the command below to open both files for comparison"
+    echo ""
+
+    if command -v code &> /dev/null; then
+        echo "   code \"$GEMINI_SETTINGS\" \"$SCRIPT_DIR/gemini-hooks.json\""
+    else
+        echo "   Open both files in your editor:"
+        echo "   - $GEMINI_SETTINGS"
+        echo "   - $SCRIPT_DIR/gemini-hooks.json"
+    fi
+else
+    echo "Gemini settings file not found at: $GEMINI_SETTINGS"
+    echo ""
+    echo "Create the file with the following content:"
+    echo ""
+    cat "$SCRIPT_DIR/gemini-hooks.json"
+fi
+
+echo ""
+echo ""
+echo "After configuring the hooks, restart any running Claude Code or Gemini CLI"
+echo "instances to pick up the new hook configuration."
 echo ""
 echo "The ClaudeDeck status server will automatically receive status updates"
-echo "from Claude Code when you run the Stream Deck plugin."
+echo "from both Claude Code and Gemini CLI when you run the Stream Deck plugin."
 echo ""
 echo "Installation complete!"

@@ -1,4 +1,4 @@
-import type { ClaudeInstance, ClaudeState, StatusUpdate, StatusMetadata } from "./types.js";
+import type { ClaudeInstance, ClaudeState, StatusUpdate, StatusMetadata, InstanceSource } from "./types.js";
 
 /**
  * Manages tracking of Claude Code instances and their states
@@ -69,7 +69,8 @@ export class InstanceManager {
       state: effectiveState,
       metadata: update.metadata,
       lastUpdate: Date.now(),
-      name: existing?.name
+      name: existing?.name,
+      source: update.source ?? "claude" // default to claude for backward compatibility
     };
 
     this.instances.set(update.session_id, instance);
@@ -137,6 +138,20 @@ export class InstanceManager {
    */
   getAvailableInstances(): ClaudeInstance[] {
     return this.getAllInstances().filter(i => i.state !== "disconnected");
+  }
+
+  /**
+   * Get instances filtered by source (claude or gemini)
+   */
+  getInstancesBySource(source: InstanceSource): ClaudeInstance[] {
+    return this.getAllInstances().filter(i => i.source === source);
+  }
+
+  /**
+   * Get available instances filtered by source
+   */
+  getAvailableInstancesBySource(source: InstanceSource): ClaudeInstance[] {
+    return this.getAvailableInstances().filter(i => i.source === source);
   }
 
   /**
