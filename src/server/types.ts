@@ -106,6 +106,23 @@ export interface CommandMessage {
 export type DisplayMode = "status" | "tokens" | "cost" | "activity";
 
 /**
+ * Binding mode for Stream Deck action
+ * - session: Bind to a single Claude/Gemini/Cursor session
+ * - tab: Bind to an entire Kitty tab (aggregate all sessions in the tab)
+ */
+export type BindingMode = "session" | "tab";
+
+/**
+ * Kitty tab binding information stored in action settings
+ */
+export interface KittyTabBinding {
+  tabId: number;
+  tabTitle?: string;
+  osWindowId?: number;
+  [key: string]: string | number | undefined;
+}
+
+/**
  * Settings stored for each Stream Deck action instance
  * Uses index signature compatible with JsonObject
  */
@@ -115,7 +132,10 @@ export interface ClaudeInstanceSettings {
   autoAssign?: boolean;
   projectFolder?: string;
   displayMode?: DisplayMode;
-  [key: string]: string | boolean | number | null | undefined;
+  // Tab binding mode settings
+  bindingMode?: BindingMode;
+  tabBinding?: KittyTabBinding;
+  [key: string]: string | boolean | number | null | undefined | KittyTabBinding;
 }
 
 /**
@@ -128,7 +148,10 @@ export interface GeminiInstanceSettings {
   autoAssign?: boolean;
   projectFolder?: string;
   displayMode?: DisplayMode;
-  [key: string]: string | boolean | number | null | undefined;
+  // Tab binding mode settings
+  bindingMode?: BindingMode;
+  tabBinding?: KittyTabBinding;
+  [key: string]: string | boolean | number | null | undefined | KittyTabBinding;
 }
 
 /**
@@ -141,7 +164,10 @@ export interface CursorInstanceSettings {
   autoAssign?: boolean;
   projectFolder?: string;
   displayMode?: DisplayMode;
-  [key: string]: string | boolean | number | null | undefined;
+  // Tab binding mode settings
+  bindingMode?: BindingMode;
+  tabBinding?: KittyTabBinding;
+  [key: string]: string | boolean | number | null | undefined | KittyTabBinding;
 }
 
 /**

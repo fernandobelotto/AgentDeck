@@ -71,6 +71,19 @@ export interface KittyRemoteOptions {
   timeout?: number;
 }
 
+/**
+ * Extended tab information with agent session tracking
+ */
+export interface KittyTabInfo {
+  tabId: number;
+  osWindowId: number;
+  title: string;
+  isActive: boolean;
+  isFocused: boolean;
+  windows: KittyWindow[]; // panes in this tab
+  agentSessions: string[]; // session IDs extracted from pane titles
+}
+
 // ============================================================================
 // Socket Path Detection
 // ============================================================================
@@ -427,6 +440,251 @@ function buildMatchString(match: KittyWindowMatch): string | null {
 
   // Join with "and" for multiple conditions
   return parts.join(" and ");
+}
+
+// ============================================================================
+// Tab Management Functions
+// ============================================================================
+
+/**
+ * Extract session ID from a window title
+ * Matches format: "[Agent]:[sessionId]:project - state"
+ * Returns the full session ID prefix (first 8 characters used in titles)
+ */
+function extractSessionFromTitle(title: string): string | null {
+  // Match Claude:abc12345:project, Gemini:abc12345:project, Cursor:abc12345:project
+  const match = title.match(/^(?:Claude|Gemini|Cursor):([a-f0-9]+):/i);
+  return match ? match[1] : null;
+}
+
+/**
+ * List all Kitty tabs with their metadata and detected agent sessions
+ * Provides the full OS Window → Tab → Window (pane) hierarchy
+ */
+export async function listTabs(options?: KittyRemoteOptions): Promise<KittyTabInfo[]> {
+  let osWindows: KittyLsResponse;
+
+  try {
+    osWindows = await listWindows(options);
+  } catch {
+    return [];
+  }
+
+  const tabs: KittyTabInfo[] = [];
+
+  for (const osWindow of osWindows) {
+    for (const tab of osWindow.tabs) {
+      // Extract session IDs from all window titles in this tab
+      const agentSessions = tab.windows
+        .map(w => extractSessionFromTitle(w.title))
+        .filter((s): s is string => s !== null);
+
+      tabs.push({
+        tabId: tab.id,
+        osWindowId: osWindow.id,
+        title: tab.title,
+        isActive: tab.is_active,
+        isFocused: tab.is_focused && osWindow.is_focused,
+        windows: tab.windows,
+        agentSessions
+      });
+    }
+  }
+
+  return tabs;
+}
+
+/**
+ * Focus a Kitty tab by its ID
+ * Uses: kitten @ focus-tab --match id:<tabId>
+ */
+export async function focusTab(
+  tabId: number,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  try {
+    await execKittenCommand("focus-tab", ["--match", `id:${tabId}`], options);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Launch a command in a new Kitty tab
+ * Uses: kitten @ launch --type=tab
+ * Returns the window ID of the new window, or null on failure
+ */
+export async function launchInNewTab(
+  command?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  const args: string[] = ["--type=tab"];
+
+  if (cwd) {
+    args.push(`--cwd=${cwd}`);
+  }
+
+  if (command) {
+    // Use interactive shell to ensure aliases are available
+    const shell = process.env.SHELL || "/bin/zsh";
+    args.push(shell, "-i", "-c", command);
+  }
+
+  try {
+    const output = await execKittenCommand("launch", args, options);
+    const windowId = parseInt(output, 10);
+    return isNaN(windowId) ? null : windowId;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Launch a command as a new pane (split) in the current tab
+ * Uses: kitten @ launch --type=window
+ * Returns the window ID of the new window, or null on failure
+ */
+export async function launchInCurrentTab(
+  command?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  const args: string[] = ["--type=window"];
+
+  if (cwd) {
+    args.push(`--cwd=${cwd}`);
+  }
+
+  if (command) {
+    // Use interactive shell to ensure aliases are available
+    const shell = process.env.SHELL || "/bin/zsh";
+    args.push(shell, "-i", "-c", command);
+  }
+
+  try {
+    const output = await execKittenCommand("launch", args, options);
+    const windowId = parseInt(output, 10);
+    return isNaN(windowId) ? null : windowId;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Find the Kitty tab containing a specific session
+ * Matches by session ID prefix in window titles
+ */
+export async function findTabContainingSession(
+  sessionId: string,
+  options?: KittyRemoteOptions
+): Promise<KittyTabInfo | null> {
+  const tabs = await listTabs(options);
+  const shortSession = sessionId.substring(0, 8);
+
+  for (const tab of tabs) {
+    // Check if any window in this tab has a matching session
+    for (const window of tab.windows) {
+      const extracted = extractSessionFromTitle(window.title);
+      if (extracted && extracted.startsWith(shortSession)) {
+        return tab;
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Find the Kitty tab matching a title pattern
+ */
+export async function findTabByTitle(
+  titlePattern: string,
+  options?: KittyRemoteOptions
+): Promise<KittyTabInfo | null> {
+  const tabs = await listTabs(options);
+  const pattern = new RegExp(titlePattern, "i");
+
+  for (const tab of tabs) {
+    if (pattern.test(tab.title)) {
+      return tab;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get all agent session IDs in a specific tab
+ */
+export async function getAgentSessionsInTab(
+  tabId: number,
+  options?: KittyRemoteOptions
+): Promise<string[]> {
+  const tabs = await listTabs(options);
+  const tab = tabs.find(t => t.tabId === tabId);
+  return tab ? tab.agentSessions : [];
+}
+
+/**
+ * Launch Claude in a new Kitty tab
+ */
+export async function launchClaudeInNewTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInNewTab("claude", cwd, options);
+}
+
+/**
+ * Launch Gemini in a new Kitty tab
+ */
+export async function launchGeminiInNewTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInNewTab("gemini", cwd, options);
+}
+
+/**
+ * Launch Cursor Agent in a new Kitty tab
+ */
+export async function launchCursorInNewTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInNewTab("agent", cwd, options);
+}
+
+/**
+ * Launch Claude as a split pane in the current tab
+ */
+export async function launchClaudeInCurrentTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInCurrentTab("claude", cwd, options);
+}
+
+/**
+ * Launch Gemini as a split pane in the current tab
+ */
+export async function launchGeminiInCurrentTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInCurrentTab("gemini", cwd, options);
+}
+
+/**
+ * Launch Cursor Agent as a split pane in the current tab
+ */
+export async function launchCursorInCurrentTab(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  return launchInCurrentTab("agent", cwd, options);
 }
 
 // ============================================================================

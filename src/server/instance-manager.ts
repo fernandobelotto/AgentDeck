@@ -8,6 +8,10 @@ export class InstanceManager {
   private readonly TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout
   private cleanupInterval: NodeJS.Timeout | null = null;
 
+  // Tab-to-session mapping for tab binding mode
+  private tabToSessions: Map<number, Set<string>> = new Map();
+  private sessionToTab: Map<string, number> = new Map();
+
   constructor() {
     // Periodically clean up stale instances
     this.cleanupInterval = setInterval(() => this.cleanupStaleInstances(), 60000);
@@ -217,6 +221,119 @@ export class InstanceManager {
     }
 
     return toRemove.length;
+  }
+
+  // ============================================================================
+  // Tab Binding Mode Methods
+  // ============================================================================
+
+  /**
+   * Associate a session with a Kitty tab
+   * This is called when we discover which tab a session is running in
+   */
+  setSessionTab(sessionId: string, tabId: number): void {
+    // Remove from old tab if exists
+    const oldTabId = this.sessionToTab.get(sessionId);
+    if (oldTabId !== undefined && oldTabId !== tabId) {
+      const oldSessions = this.tabToSessions.get(oldTabId);
+      if (oldSessions) {
+        oldSessions.delete(sessionId);
+        if (oldSessions.size === 0) {
+          this.tabToSessions.delete(oldTabId);
+        }
+      }
+    }
+
+    // Add to new tab
+    this.sessionToTab.set(sessionId, tabId);
+    if (!this.tabToSessions.has(tabId)) {
+      this.tabToSessions.set(tabId, new Set());
+    }
+    this.tabToSessions.get(tabId)!.add(sessionId);
+  }
+
+  /**
+   * Get the tab ID for a session
+   */
+  getTabForSession(sessionId: string): number | undefined {
+    return this.sessionToTab.get(sessionId);
+  }
+
+  /**
+   * Get all session IDs in a specific tab
+   */
+  getSessionIdsInTab(tabId: number): string[] {
+    const sessions = this.tabToSessions.get(tabId);
+    return sessions ? Array.from(sessions) : [];
+  }
+
+  /**
+   * Get all instances in a specific tab
+   */
+  getSessionsInTab(tabId: number): ClaudeInstance[] {
+    const sessionIds = this.getSessionIdsInTab(tabId);
+    return sessionIds
+      .map(id => this.instances.get(id))
+      .filter((i): i is ClaudeInstance => i !== undefined);
+  }
+
+  /**
+   * Priority order for state aggregation
+   * Higher priority states should surface first (user-attention-required states)
+   */
+  private static readonly STATE_PRIORITY: ClaudeState[] = [
+    "permission",   // Needs immediate user action
+    "question",     // Needs user input
+    "error",        // Something went wrong
+    "running",      // Active processing
+    "tool_use",     // Using a tool
+    "editing",      // Editing files
+    "idle",         // Ready for input
+    "disconnected"  // Not connected
+  ];
+
+  /**
+   * Compute aggregated state for a tab containing multiple sessions
+   * Returns the highest-priority state among all sessions in the tab
+   */
+  getAggregatedTabState(tabId: number): ClaudeState {
+    const sessions = this.getSessionsInTab(tabId);
+    if (sessions.length === 0) {
+      return "disconnected";
+    }
+
+    // Find the highest-priority state among all sessions
+    for (const state of InstanceManager.STATE_PRIORITY) {
+      if (sessions.some(s => s.state === state)) {
+        return state;
+      }
+    }
+
+    return "disconnected";
+  }
+
+  /**
+   * Get all tracked tabs (tabs that have at least one session)
+   */
+  getTrackedTabs(): number[] {
+    return Array.from(this.tabToSessions.keys());
+  }
+
+  /**
+   * Clear tab mapping for a session (when session disconnects)
+   */
+  clearSessionTab(sessionId: string): void {
+    const tabId = this.sessionToTab.get(sessionId);
+    if (tabId !== undefined) {
+      const sessions = this.tabToSessions.get(tabId);
+      if (sessions) {
+        sessions.delete(sessionId);
+        if (sessions.size === 0) {
+          this.tabToSessions.delete(tabId);
+        }
+      }
+      this.sessionToTab.delete(sessionId);
+    }
   }
 
   /**

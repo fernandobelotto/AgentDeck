@@ -3,7 +3,16 @@ import { WebSocketServer, WebSocket } from "ws";
 import { InstanceManager } from "./instance-manager.js";
 import { UsageTracker } from "./usage-tracker.js";
 import { GeminiUsageTracker } from "./gemini-usage-tracker.js";
-import { isKittyAvailable, getKittySocketPath, findWorkingSocket, getSocketCandidates, clearSocketCache } from "../utils/kitty-remote.js";
+import {
+  isKittyAvailable,
+  getKittySocketPath,
+  findWorkingSocket,
+  getSocketCandidates,
+  clearSocketCache,
+  listTabs,
+  focusTab as focusKittyTab,
+  type KittyTabInfo
+} from "../utils/kitty-remote.js";
 import { pickFolder } from "../utils/folder-picker.js";
 import type {
   StatusUpdate,
@@ -82,6 +91,12 @@ export class StatusServer {
         this.handlePickFolder(res);
       } else if (req.method === "GET" && req.url?.startsWith("/usage/")) {
         this.handleGetUsage(req, res);
+      } else if (req.method === "GET" && req.url === "/tabs") {
+        this.handleGetTabs(res);
+      } else if (req.method === "POST" && req.url === "/focus-tab") {
+        this.handleFocusTab(req, res);
+      } else if (req.method === "GET" && req.url?.startsWith("/tab-state/")) {
+        this.handleGetTabState(req, res);
       } else {
         res.writeHead(404);
         res.end("Not Found");
@@ -220,6 +235,96 @@ export class StatusServer {
       res.writeHead(404, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "No usage data for session" }));
     }
+  }
+
+  /**
+   * Handle GET /tabs - List all Kitty tabs with their agent sessions
+   */
+  private async handleGetTabs(res: http.ServerResponse): Promise<void> {
+    try {
+      const tabs = await listTabs();
+
+      // Enrich tabs with aggregated state from instance manager
+      const enrichedTabs = tabs.map(tab => ({
+        ...tab,
+        aggregatedState: this.instanceManager.getAggregatedTabState(tab.tabId),
+        trackedSessionCount: this.instanceManager.getSessionsInTab(tab.tabId).length
+      }));
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(enrichedTabs));
+    } catch (error) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: String(error) }));
+    }
+  }
+
+  /**
+   * Handle POST /focus-tab - Focus a Kitty tab by ID
+   */
+  private handleFocusTab(req: http.IncomingMessage, res: http.ServerResponse): void {
+    let body = "";
+
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+
+    req.on("end", async () => {
+      try {
+        const data = JSON.parse(body);
+        const tabId = data.tabId;
+
+        if (typeof tabId !== "number") {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: "Missing or invalid tabId" }));
+          return;
+        }
+
+        const success = await focusKittyTab(tabId);
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Invalid JSON" }));
+      }
+    });
+
+    req.on("error", () => {
+      res.writeHead(500);
+      res.end("Server Error");
+    });
+  }
+
+  /**
+   * Handle GET /tab-state/:tabId - Get aggregated state for a tab
+   */
+  private handleGetTabState(req: http.IncomingMessage, res: http.ServerResponse): void {
+    const url = new URL(req.url || "/tab-state/", "http://127.0.0.1");
+    const pathParts = url.pathname.split("/").filter(Boolean);
+    const tabIdStr = pathParts[1] || "";
+    const tabId = parseInt(tabIdStr, 10);
+
+    if (isNaN(tabId)) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid tab ID" }));
+      return;
+    }
+
+    const aggregatedState = this.instanceManager.getAggregatedTabState(tabId);
+    const sessions = this.instanceManager.getSessionsInTab(tabId);
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      tabId,
+      aggregatedState,
+      sessions: sessions.map(s => ({
+        sessionId: s.sessionId,
+        state: s.state,
+        source: s.source,
+        cwd: s.metadata?.cwd
+      }))
+    }));
   }
 
   private broadcastUsageUpdate(sessionId: string, usage: UsageStats, source: InstanceSource = "claude"): void {

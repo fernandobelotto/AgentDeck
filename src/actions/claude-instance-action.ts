@@ -15,7 +15,13 @@ import { InteractionHandler, setInteractionLogger } from "../utils/interaction-h
 import { AnimationController } from "../icons/animation-controller.js";
 import { IconGenerator } from "../icons/icon-generator.js";
 import { focusTerminal, sendCancelSignal, sendApproveSignal, openTerminalWithClaude } from "../utils/terminal-focus.js";
-import { isKittyAvailable, launchKittyWithRemoteControl } from "../utils/kitty-remote.js";
+import {
+  isKittyAvailable,
+  launchKittyWithRemoteControl,
+  focusTab as focusKittyTab,
+  launchClaudeInNewTab,
+  listTabs
+} from "../utils/kitty-remote.js";
 import { formatTokenCount, formatCost } from "../server/usage-tracker.js";
 import type {
   ClaudeInstanceSettings,
@@ -24,7 +30,9 @@ import type {
   ClaudeInstance,
   CommandMessage,
   UsageStats,
-  DisplayMode
+  DisplayMode,
+  BindingMode,
+  KittyTabBinding
 } from "../server/types.js";
 
 const WS_URL = "ws://127.0.0.1:19847";
@@ -79,6 +87,12 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
   /** Current Kitty availability status */
   private kittyAvailable: boolean = false;
+
+  /** Aggregated tab states for tab binding mode */
+  private tabStates: Map<number, ClaudeState> = new Map();
+
+  /** Sessions in each tab (for tab binding mode) */
+  private tabSessions: Map<number, Set<string>> = new Map();
 
   /**
    * Called when an action instance appears on the Stream Deck
@@ -209,11 +223,26 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     }
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
+    const bindingMode = (settings.bindingMode as BindingMode) || "session";
     const sessionId = settings.sessionId as string | undefined;
+    const tabBinding = settings.tabBinding as KittyTabBinding | undefined;
     const projectFolder = settings.projectFolder as string | undefined;
-    logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}, Kitty available: ${this.kittyAvailable}`);
 
-    // If session is attached, focus that terminal window
+    logger.info(`Binding mode: ${bindingMode}, Session ID: ${sessionId || "none"}, Tab ID: ${tabBinding?.tabId || "none"}, Kitty available: ${this.kittyAvailable}`);
+
+    // Tab binding mode: focus the tab
+    if (bindingMode === "tab" && tabBinding?.tabId) {
+      logger.info(`Focusing Kitty tab: ${tabBinding.tabId}`);
+      const success = await focusKittyTab(tabBinding.tabId);
+      if (success) {
+        logger.info(`Successfully focused tab ${tabBinding.tabId}`);
+      } else {
+        logger.warn(`Failed to focus tab ${tabBinding.tabId} - tab may no longer exist`);
+      }
+      return;
+    }
+
+    // Session binding mode: focus that terminal window
     if (sessionId) {
       const instance = this.knownInstances.get(sessionId);
       const cwd = instance?.metadata?.cwd;
@@ -222,7 +251,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       return;
     }
 
-    // No session attached - check if Kitty is available first
+    // No session/tab attached - check if Kitty is available first
     if (!this.kittyAvailable) {
       // Launch Kitty with remote control enabled
       logger.info(`Kitty not available - launching Kitty with remote control`);
@@ -244,7 +273,19 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     }
 
     // Kitty is available - launch new Claude instance
-    // Use project folder if configured, otherwise launch without a specific directory
+    // In tab mode without a bound tab, launch in a new tab
+    if (bindingMode === "tab") {
+      logger.info(`Tab mode - launching Claude in new tab`);
+      const windowId = await launchClaudeInNewTab(projectFolder);
+      if (windowId !== null) {
+        logger.info(`Launched Claude in new tab, windowId: ${windowId}`);
+      } else {
+        logger.error(`Failed to launch Claude in new tab`);
+      }
+      return;
+    }
+
+    // Session mode - use existing behavior
     if (projectFolder) {
       logger.info(`Launching Claude in project folder: ${projectFolder}`);
       const result = await openTerminalWithClaude(projectFolder);
@@ -273,6 +314,25 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     if (!action) return;
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
+    const bindingMode = (settings.bindingMode as BindingMode) || "session";
+    const tabBinding = settings.tabBinding as KittyTabBinding | undefined;
+
+    // Tab binding mode: cancel all sessions in the tab
+    if (bindingMode === "tab" && tabBinding?.tabId) {
+      const sessionIds = this.tabSessions.get(tabBinding.tabId);
+      if (sessionIds && sessionIds.size > 0) {
+        logger.info(`[Action] Sending cancel signal to ${sessionIds.size} sessions in tab ${tabBinding.tabId}`);
+        for (const sessionId of sessionIds) {
+          const instance = this.knownInstances.get(sessionId);
+          const cwd = instance?.metadata?.cwd;
+          this.sendCommand(sessionId, "cancel");
+          sendCancelSignal(sessionId, cwd);
+        }
+      }
+      return;
+    }
+
+    // Session binding mode
     const sessionId = settings.sessionId as string | undefined;
     if (sessionId) {
       logger.info(`[Action] Sending cancel signal for session: ${sessionId}`);
@@ -292,6 +352,35 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     if (!action) return;
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
+    const bindingMode = (settings.bindingMode as BindingMode) || "session";
+    const tabBinding = settings.tabBinding as KittyTabBinding | undefined;
+
+    // Tab binding mode: approve all permission-pending sessions in the tab
+    if (bindingMode === "tab" && tabBinding?.tabId) {
+      const sessionIds = this.tabSessions.get(tabBinding.tabId);
+      if (sessionIds && sessionIds.size > 0) {
+        let approvedCount = 0;
+        for (const sessionId of sessionIds) {
+          const state = this.instanceStates.get(sessionId);
+          if (state === "permission") {
+            logger.info(`[Action] Sending approve signal for session: ${sessionId} in tab ${tabBinding.tabId}`);
+            const instance = this.knownInstances.get(sessionId);
+            const cwd = instance?.metadata?.cwd;
+            this.sendCommand(sessionId, "approve");
+            try {
+              await sendApproveSignal(sessionId, cwd);
+              approvedCount++;
+            } catch (err) {
+              logger.error(`[Action] sendApproveSignal failed for ${sessionId}: ${err}`);
+            }
+          }
+        }
+        logger.info(`[Action] Approved ${approvedCount} sessions in tab ${tabBinding.tabId}`);
+      }
+      return;
+    }
+
+    // Session binding mode
     const sessionId = settings.sessionId as string | undefined;
     const state = sessionId ? this.instanceStates.get(sessionId) : undefined;
 
@@ -326,7 +415,16 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const contextId = action.id;
     const animController = this.animationControllers.get(contextId);
     const displayMode = (settings.displayMode as DisplayMode) || "status";
+    const bindingMode = (settings.bindingMode as BindingMode) || "session";
+    const tabBinding = settings.tabBinding as KittyTabBinding | undefined;
     const sessionId = settings.sessionId as string | undefined;
+
+    // For tab mode, use aggregated tab state
+    let effectiveState = state;
+    if (bindingMode === "tab" && tabBinding?.tabId) {
+      effectiveState = this.tabStates.get(tabBinding.tabId) ?? "disconnected";
+    }
+
     const usage = sessionId ? this.usageStats.get(sessionId) : undefined;
     const instance = sessionId ? this.knownInstances.get(sessionId) : undefined;
 
@@ -341,7 +439,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
           ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
           : 0;
         const tokenText = formatTokenCount(totalTokens);
-        const dataUrl = IconGenerator.generateTokenDisplay(totalTokens, state);
+        const dataUrl = IconGenerator.generateTokenDisplay(totalTokens, effectiveState);
         if (action.isKey()) {
           action.setImage(dataUrl);
           action.setTitle(tokenText);
@@ -356,7 +454,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         }
         const cost = usage?.totalCost ?? 0;
         const costText = formatCost(cost);
-        const dataUrl = IconGenerator.generateCostDisplay(cost, state);
+        const dataUrl = IconGenerator.generateCostDisplay(cost, effectiveState);
         if (action.isKey()) {
           action.setImage(dataUrl);
           action.setTitle(costText);
@@ -370,7 +468,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
           animController.stop();
         }
         const toolName = instance?.metadata?.tool_name || "---";
-        const dataUrl = IconGenerator.generateActivityDisplay(toolName, state);
+        const dataUrl = IconGenerator.generateActivityDisplay(toolName, effectiveState);
         if (action.isKey()) {
           action.setImage(dataUrl);
           action.setTitle(toolName);
@@ -382,12 +480,21 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       default: {
         // Use animated status display (existing behavior)
         if (animController) {
-          animController.setState(state);
+          animController.setState(effectiveState);
         }
 
-        // Update title with instance name or session ID prefix
+        // Update title with instance name, tab title, or session ID prefix
         const instanceName = settings.instanceName as string | undefined;
-        const title = instanceName || (sessionId ? sessionId.substring(0, 6) : "---");
+        let title: string;
+        if (instanceName) {
+          title = instanceName;
+        } else if (bindingMode === "tab" && tabBinding?.tabTitle) {
+          title = tabBinding.tabTitle.substring(0, 6);
+        } else if (sessionId) {
+          title = sessionId.substring(0, 6);
+        } else {
+          title = "---";
+        }
 
         if (action.isKey()) {
           action.setTitle(title);
@@ -714,6 +821,101 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       for (const animController of this.animationControllers.values()) {
         animController.setKittyAvailable(available);
       }
+    }
+
+    // Refresh tab mappings if Kitty is available
+    if (available) {
+      await this.refreshTabMappings();
+    }
+  }
+
+  /**
+   * Refresh tab-to-session mappings by querying Kitty
+   * This updates tabSessions and tabStates maps
+   */
+  private async refreshTabMappings(): Promise<void> {
+    if (!this.kittyAvailable) {
+      return;
+    }
+
+    try {
+      const tabs = await listTabs();
+
+      // Clear current mappings
+      this.tabSessions.clear();
+      this.tabStates.clear();
+
+      // Build new mappings from Kitty's current state
+      for (const tab of tabs) {
+        const sessionsInTab = new Set<string>();
+
+        // Match session IDs from window titles to our known instances
+        for (const agentSession of tab.agentSessions) {
+          // Find matching known instance (agentSessions has 8-char prefix)
+          for (const [sessionId, _instance] of this.knownInstances) {
+            if (sessionId.startsWith(agentSession)) {
+              sessionsInTab.add(sessionId);
+            }
+          }
+        }
+
+        if (sessionsInTab.size > 0) {
+          this.tabSessions.set(tab.tabId, sessionsInTab);
+
+          // Compute aggregated state for this tab
+          const aggregatedState = this.computeAggregatedTabState(sessionsInTab);
+          this.tabStates.set(tab.tabId, aggregatedState);
+        }
+      }
+
+      // Update all tab-bound actions
+      this.updateTabBoundActions();
+    } catch (err) {
+      logger.warn(`Failed to refresh tab mappings: ${err}`);
+    }
+  }
+
+  /**
+   * Compute aggregated state for a set of session IDs
+   * Returns the highest-priority state (permission > question > error > running > ...)
+   */
+  private computeAggregatedTabState(sessionIds: Set<string>): ClaudeState {
+    const statePriority: ClaudeState[] = [
+      "permission",
+      "question",
+      "error",
+      "running",
+      "tool_use",
+      "editing",
+      "idle",
+      "disconnected"
+    ];
+
+    for (const state of statePriority) {
+      for (const sessionId of sessionIds) {
+        if (this.instanceStates.get(sessionId) === state) {
+          return state;
+        }
+      }
+    }
+
+    return "disconnected";
+  }
+
+  /**
+   * Update all actions that are bound to tabs
+   */
+  private updateTabBoundActions(): void {
+    for (const action of this.actions) {
+      action.getSettings<ClaudeInstanceSettings>().then((settings) => {
+        const bindingMode = (settings.bindingMode as BindingMode) || "session";
+        const tabBinding = settings.tabBinding as KittyTabBinding | undefined;
+
+        if (bindingMode === "tab" && tabBinding?.tabId) {
+          const tabState = this.tabStates.get(tabBinding.tabId) ?? "disconnected";
+          this.updateDisplay(action, tabState, settings);
+        }
+      });
     }
   }
 

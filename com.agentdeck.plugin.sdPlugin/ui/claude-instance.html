@@ -262,6 +262,63 @@
       margin-top: 4px;
       word-break: break-all;
     }
+
+    /* Tab list styling */
+    #tabList {
+      margin-top: 6px;
+      padding: 6px;
+      background-color: #1a1a1a;
+      border-radius: 4px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .tab-item {
+      padding: 6px;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+
+    .tab-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .tab-item:hover {
+      background-color: #333;
+    }
+
+    .tab-item.selected {
+      background-color: var(--sdpi-highlight);
+      color: white;
+    }
+
+    .tab-info {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .tab-name {
+      font-weight: 500;
+    }
+
+    .tab-sessions {
+      font-size: 10px;
+      color: #888;
+    }
+
+    .tab-item.selected .tab-sessions {
+      color: rgba(255,255,255,0.7);
+    }
+
+    /* Hidden sections */
+    .hidden {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -271,6 +328,17 @@
     <!-- Hidden fields for programmatic use -->
     <input type="hidden" id="instanceName" />
     <input type="hidden" id="sessionId" />
+    <input type="hidden" id="tabId" />
+    <input type="hidden" id="tabTitle" />
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Binding Mode</div>
+      <select id="bindingMode" class="sdpi-item-value">
+        <option value="session">Single Instance</option>
+        <option value="tab">Kitty Tab (All Instances)</option>
+      </select>
+      <div class="sdpi-info">Control one instance or all instances in a tab</div>
+    </div>
 
     <div class="sdpi-item">
       <div class="sdpi-item-label">Project Folder</div>
@@ -292,7 +360,8 @@
       <div class="sdpi-info">Choose what to display on the key</div>
     </div>
 
-    <div class="sdpi-item">
+    <!-- Session mode: Instance list -->
+    <div class="sdpi-item" id="instanceSection">
       <div class="refresh-row">
         <div class="sdpi-item-label">Available Instances</div>
         <button id="refreshInstances">Refresh</button>
@@ -302,7 +371,18 @@
       </div>
     </div>
 
-    <div class="sdpi-item sdpi-item-checkbox">
+    <!-- Tab mode: Tab list -->
+    <div class="sdpi-item hidden" id="tabSection">
+      <div class="refresh-row">
+        <div class="sdpi-item-label">Available Tabs</div>
+        <button id="refreshTabs">Refresh</button>
+      </div>
+      <div id="tabList">
+        <div class="sdpi-info">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sdpi-item sdpi-item-checkbox" id="autoAssignSection">
       <input type="checkbox" id="autoAssign" />
       <label for="autoAssign">Auto-assign next available instance</label>
     </div>
@@ -372,6 +452,16 @@
       document.getElementById("autoAssign").checked = settings.autoAssign ?? true;
       document.getElementById("displayMode").value = settings.displayMode || "status";
       document.getElementById("projectFolder").value = settings.projectFolder || "";
+      document.getElementById("bindingMode").value = settings.bindingMode || "session";
+
+      // Tab binding settings
+      if (settings.tabBinding) {
+        document.getElementById("tabId").value = settings.tabBinding.tabId || "";
+        document.getElementById("tabTitle").value = settings.tabBinding.tabTitle || "";
+      }
+
+      // Update UI visibility based on binding mode
+      updateBindingModeUI();
     }
 
     function saveSettings() {
@@ -380,6 +470,19 @@
       settings.autoAssign = document.getElementById("autoAssign").checked;
       settings.displayMode = document.getElementById("displayMode").value;
       settings.projectFolder = document.getElementById("projectFolder").value;
+      settings.bindingMode = document.getElementById("bindingMode").value;
+
+      // Tab binding settings
+      const tabId = document.getElementById("tabId").value;
+      const tabTitle = document.getElementById("tabTitle").value;
+      if (tabId) {
+        settings.tabBinding = {
+          tabId: parseInt(tabId, 10),
+          tabTitle: tabTitle || undefined
+        };
+      } else {
+        delete settings.tabBinding;
+      }
 
       if (websocket && websocket.readyState === WebSocket.OPEN) {
         websocket.send(JSON.stringify({
@@ -387,6 +490,25 @@
           context: uuid,
           payload: settings
         }));
+      }
+    }
+
+    function updateBindingModeUI() {
+      const bindingMode = document.getElementById("bindingMode").value;
+      const instanceSection = document.getElementById("instanceSection");
+      const tabSection = document.getElementById("tabSection");
+      const autoAssignSection = document.getElementById("autoAssignSection");
+
+      if (bindingMode === "tab") {
+        instanceSection.classList.add("hidden");
+        tabSection.classList.remove("hidden");
+        autoAssignSection.classList.add("hidden");
+        refreshTabs();
+      } else {
+        instanceSection.classList.remove("hidden");
+        tabSection.classList.add("hidden");
+        autoAssignSection.classList.remove("hidden");
+        refreshInstances();
       }
     }
 
@@ -489,12 +611,65 @@
         });
     }
 
+    function refreshTabs() {
+      fetch("http://127.0.0.1:19847/tabs")
+        .then(res => res.json())
+        .then(tabs => {
+          const list = document.getElementById("tabList");
+          if (tabs.length === 0) {
+            list.innerHTML = '<div class="sdpi-info">No Kitty tabs detected. Make sure Kitty is running with remote control enabled.</div>';
+            return;
+          }
+
+          const currentTabId = document.getElementById("tabId").value;
+
+          list.innerHTML = tabs.map(tab => {
+            const selected = tab.tabId.toString() === currentTabId ? "selected" : "";
+            const sessionCount = tab.agentSessions.length;
+            const tabName = tab.title || `Tab ${tab.tabId}`;
+            const stateClass = tab.aggregatedState ? `state-${tab.aggregatedState}` : "";
+
+            return `
+              <div class="tab-item ${selected}" data-tab-id="${tab.tabId}" data-tab-title="${tabName}">
+                <div class="tab-info">
+                  <span class="tab-name">${tabName}</span>
+                  <span class="tab-sessions">${sessionCount} instance(s)</span>
+                </div>
+                ${tab.aggregatedState ? `<span class="instance-state ${stateClass}">${tab.aggregatedState}</span>` : ""}
+              </div>
+            `;
+          }).join("");
+
+          list.querySelectorAll(".tab-item").forEach(item => {
+            item.addEventListener("click", function() {
+              document.getElementById("tabId").value = this.dataset.tabId;
+              document.getElementById("tabTitle").value = this.dataset.tabTitle || "";
+              // Set instance name from tab title if empty
+              if (!document.getElementById("instanceName").value) {
+                document.getElementById("instanceName").value = this.dataset.tabTitle || "";
+              }
+              saveSettings();
+              refreshTabs();
+            });
+          });
+        })
+        .catch(() => {
+          document.getElementById("tabList").innerHTML =
+            '<div class="sdpi-info">Could not fetch tabs from AgentDeck server.</div>';
+        });
+    }
+
     document.getElementById("instanceName").addEventListener("change", saveSettings);
     document.getElementById("autoAssign").addEventListener("change", saveSettings);
     document.getElementById("displayMode").addEventListener("change", saveSettings);
     document.getElementById("projectFolder").addEventListener("change", saveSettings);
     document.getElementById("browseFolder").addEventListener("click", browseFolder);
     document.getElementById("refreshInstances").addEventListener("click", () => refreshInstances(true));
+    document.getElementById("refreshTabs").addEventListener("click", refreshTabs);
+    document.getElementById("bindingMode").addEventListener("change", function() {
+      updateBindingModeUI();
+      saveSettings();
+    });
   </script>
 </body>
 </html>
