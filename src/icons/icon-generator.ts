@@ -37,8 +37,8 @@ const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#C4684D",
     glowColor: "#D9765740",
     icon: "claude",
-    animationType: 'breathing',
-    animationFrames: 120,  // 10 seconds at 12fps - very slow breathing
+    animationType: 'none',
+    animationFrames: 1,
     label: "Ready"
   },
   running: {
@@ -122,8 +122,8 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#3367D6",
     glowColor: "#4285F440",
     icon: "gemini",  // Gemini sparkle icon
-    animationType: 'breathing',
-    animationFrames: 120,  // 10 seconds at 12fps - very slow breathing
+    animationType: 'none',
+    animationFrames: 1,
     label: "Ready"
   },
   running: {
@@ -459,20 +459,17 @@ export class IconGenerator {
   }
 
   /**
-   * Generate breathing animation for idle state - subtle scale and glow pulse
+   * Generate floating Y offset for idle state - icon bobs up and down like floating in space
    * @param frame - Current animation frame
    * @param totalFrames - Total frames in the cycle
-   * @param color - Glow color
+   * @returns Y offset in pixels
    */
-  private static generateBreathingAnimation(frame: number, totalFrames: number, color: string): string {
+  private static generateFloatingOffset(frame: number, totalFrames: number): number {
     const progress = frame / totalFrames;
-    const breathPhase = Math.sin(progress * Math.PI * 2);
-
-    // Very subtle glow pulse
-    const glowOpacity = 0.08 + breathPhase * 0.06;
-    const glowRadius = 42 + breathPhase * 4;
-
-    return `<circle cx="0" cy="0" r="${glowRadius.toFixed(1)}" fill="${color}" opacity="${glowOpacity.toFixed(2)}"/>`;
+    // Smooth sine wave for gentle bobbing motion
+    const floatPhase = Math.sin(progress * Math.PI * 2);
+    // Float between -4 and +4 pixels
+    return floatPhase * 4;
   }
 
   /**
@@ -507,7 +504,8 @@ export class IconGenerator {
       case 'wave':
         return this.generateWaveAnimation(frame, config.animationFrames, config.primaryColor);
       case 'breathing':
-        return this.generateBreathingAnimation(frame, config.animationFrames, config.glowColor);
+        // Breathing doesn't add animation elements - it scales the icon itself
+        return '';
       case 'shake':
         // Shake animation doesn't add elements, it modifies the icon transform
         return '';
@@ -539,6 +537,11 @@ export class IconGenerator {
       ? this.generateShakeOffset(frame, config.animationFrames)
       : 0;
 
+    // Floating offset for idle state (bobbing up and down)
+    const floatingOffset = config.animationType === 'breathing'
+      ? this.generateFloatingOffset(frame, config.animationFrames)
+      : 0;
+
     // Animation layers
     const animationLayer = this.generateAnimationLayer(config, frame);
 
@@ -547,8 +550,8 @@ export class IconGenerator {
       ? this.generateHoldProgressRing(holdProgress, config.primaryColor)
       : '';
 
-    // Ambient glow for non-animated states (except breathing which has its own glow)
-    const ambientGlow = config.animationType === 'none'
+    // Ambient glow for static states (none and breathing which only scales the icon)
+    const ambientGlow = (config.animationType === 'none' || config.animationType === 'breathing')
       ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>`
       : '';
 
@@ -588,8 +591,8 @@ export class IconGenerator {
     <!-- Hold progress ring -->
     ${holdProgressRing}
 
-    <!-- Icon with rotation for loader and shake for error -->
-    <g transform="rotate(${rotation}) translate(${shakeOffset}, 0)" filter="url(#glow)">
+    <!-- Icon with rotation for loader, shake for error, float for idle -->
+    <g transform="rotate(${rotation}) translate(${shakeOffset}, ${floatingOffset})" filter="url(#glow)">
       <g style="color: ${config.primaryColor}">
         ${iconPath}
       </g>

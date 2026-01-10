@@ -268,27 +268,18 @@
   <div class="sdpi-wrapper">
     <div class="sdpi-heading">Claude Instance Settings</div>
 
-    <!-- Health Status -->
-    <div class="health-status">
-      <div class="health-item">
-        <div class="health-indicator" id="serverStatus"></div>
-        <span class="health-label">Server</span>
-      </div>
-      <div class="health-item">
-        <div class="health-indicator" id="kittyStatus"></div>
-        <span class="health-label">Kitty</span>
-      </div>
-    </div>
-
-    <!-- Instance Name is hidden from UI but still used programmatically for auto-fill from folder name -->
+    <!-- Hidden fields for programmatic use -->
     <input type="hidden" id="instanceName" />
-
-    <div class="sdpi-item sdpi-item-checkbox">
-      <input type="checkbox" id="autoAssign" />
-      <label for="autoAssign">Auto-assign next available instance</label>
-    </div>
-
     <input type="hidden" id="sessionId" />
+
+    <div class="sdpi-item">
+      <div class="sdpi-item-label">Project Folder</div>
+      <div class="sdpi-item-value folder-input-row">
+        <input type="text" id="projectFolder" placeholder="/path/to/project" />
+        <button id="browseFolder">Browse</button>
+      </div>
+      <div class="sdpi-info">When set, pressing the button launches Claude Code in this folder</div>
+    </div>
 
     <div class="sdpi-item">
       <div class="sdpi-item-label">Display Mode</div>
@@ -302,21 +293,29 @@
     </div>
 
     <div class="sdpi-item">
-      <div class="sdpi-item-label">Project Folder</div>
-      <div class="sdpi-item-value folder-input-row">
-        <input type="text" id="projectFolder" placeholder="/path/to/project" />
-        <button id="browseFolder">Browse</button>
-      </div>
-      <div class="sdpi-info">When set, pressing the button launches Claude Code in this folder</div>
-    </div>
-
-    <div class="sdpi-item">
       <div class="refresh-row">
         <div class="sdpi-item-label">Available Instances</div>
         <button id="refreshInstances">Refresh</button>
       </div>
       <div id="instanceList">
         <div class="sdpi-info">Loading...</div>
+      </div>
+    </div>
+
+    <div class="sdpi-item sdpi-item-checkbox">
+      <input type="checkbox" id="autoAssign" />
+      <label for="autoAssign">Auto-assign next available instance</label>
+    </div>
+
+    <!-- Health Status -->
+    <div class="health-status">
+      <div class="health-item">
+        <div class="health-indicator" id="serverStatus"></div>
+        <span class="health-label">Server</span>
+      </div>
+      <div class="health-item">
+        <div class="health-indicator" id="kittyStatus"></div>
+        <span class="health-label">Kitty</span>
       </div>
     </div>
   </div>
@@ -370,7 +369,7 @@
     function loadSettings() {
       document.getElementById("instanceName").value = settings.instanceName || "";
       document.getElementById("sessionId").value = settings.sessionId || "";
-      document.getElementById("autoAssign").checked = settings.autoAssign || false;
+      document.getElementById("autoAssign").checked = settings.autoAssign ?? true;
       document.getElementById("displayMode").value = settings.displayMode || "status";
       document.getElementById("projectFolder").value = settings.projectFolder || "";
     }
