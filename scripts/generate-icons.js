@@ -24,11 +24,11 @@ const GEMINI = {
   yellow: "#FABC12"
 };
 
-// Cursor color palette
+// Cursor color palette - Official brand colors
 const CURSOR = {
-  black: "#141413",
-  purple: "#8B5CF6",
-  lightPurple: "#A78BFA"
+  black: "#14120B",      // Cursor brand dark
+  brand: "#EDECEC",      // Cursor brand light (primary on dark BG)
+  brandDark: "#D6D5D2"   // Slightly darker for secondary elements
 };
 
 // Claude starburst logo (viewBox 0 0 24 24)
@@ -229,14 +229,14 @@ function generateCursorSvg(size, showStatusDot = true) {
   const dotInner = size * 0.028;
 
   const statusDot = showStatusDot ? `
-    <circle cx="${dotX}" cy="${dotY}" r="${dotOuter}" fill="${CURSOR.purple}" opacity="0.9"/>
+    <circle cx="${dotX}" cy="${dotY}" r="${dotOuter}" fill="${CURSOR.brand}" opacity="0.9"/>
     <circle cx="${dotX}" cy="${dotY}" r="${dotMid}" fill="${CURSOR.black}"/>
-    <circle cx="${dotX}" cy="${dotY}" r="${dotInner}" fill="${CURSOR.purple}"/>
+    <circle cx="${dotX}" cy="${dotY}" r="${dotInner}" fill="${CURSOR.brand}"/>
   ` : '';
 
-  // Cursor hexagonal logo
+  // Cursor hexagonal logo with brand color
   const cursorLogo = `
-    <path d="${CURSOR_LOGO_PATH}" fill="${CURSOR.purple}"/>
+    <path d="${CURSOR_LOGO_PATH}" fill="${CURSOR.brand}"/>
   `;
 
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
@@ -256,7 +256,7 @@ function generateCursorSvg(size, showStatusDot = true) {
   <!-- Center group -->
   <g transform="translate(${center}, ${center - size * 0.028})">
     <!-- Ambient glow -->
-    <circle cx="0" cy="0" r="${glowRadius}" fill="${CURSOR.purple}40"/>
+    <circle cx="0" cy="0" r="${glowRadius}" fill="${CURSOR.brand}40"/>
 
     <!-- Icon -->
     <g filter="url(#glowCursor)">

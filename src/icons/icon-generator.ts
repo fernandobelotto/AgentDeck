@@ -30,13 +30,13 @@ const GOOGLE = {
   gray: "#30302E",       // Same tertiary gray
 };
 
-// Cursor color palette (Cursor Agent)
+// Cursor color palette (Cursor Agent) - Official brand colors
 const CURSOR = {
-  black: "#141413",      // Same background for consistency
-  cream: "#FAF9F5",      // Same light text
-  purple: "#8B5CF6",     // Cursor Purple (brand color)
-  darkGray: "#1F1E1D",   // Same secondary dark
-  gray: "#30302E",       // Same tertiary gray
+  black: "#14120B",      // Cursor brand dark
+  cream: "#EDECEC",      // Cursor brand light (primary on dark backgrounds)
+  brand: "#EDECEC",      // Cursor brand color (light gray for dark BG)
+  darkGray: "#1F1E1D",   // Secondary dark
+  gray: "#30302E",       // Tertiary gray
 };
 
 // Claude state configs
@@ -209,39 +209,39 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   }
 };
 
-// Cursor state configs - Cursor Purple themed
+// Cursor state configs - Official brand colors (#14120B dark, #EDECEC light)
 const CURSOR_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   idle: {
-    primaryColor: CURSOR.purple,
-    secondaryColor: "#7C3AED",
-    glowColor: "#8B5CF640",
-    icon: "cursor",  // Cursor pointer icon
+    primaryColor: CURSOR.brand,
+    secondaryColor: "#D6D5D2",
+    glowColor: "#EDECEC40",
+    icon: "cursor",  // Cursor cube icon
     animationType: 'none',
     animationFrames: 1,
     label: "Ready"
   },
   running: {
-    primaryColor: "#A78BFA",
-    secondaryColor: "#8B5CF6",
-    glowColor: "#A78BFA50",
+    primaryColor: "#EDECEC",
+    secondaryColor: "#D6D5D2",
+    glowColor: "#EDECEC50",
     icon: "loader",
     animationType: 'orbit',
     animationFrames: 96,
     label: "Running"
   },
   tool_use: {
-    primaryColor: CURSOR.purple,
-    secondaryColor: "#7C3AED",
-    glowColor: "#8B5CF650",
+    primaryColor: CURSOR.brand,
+    secondaryColor: "#D6D5D2",
+    glowColor: "#EDECEC50",
     icon: "wrench",
     animationType: 'ripple',
     animationFrames: 72,
     label: "Tool"
   },
   editing: {
-    primaryColor: "#C084FC",  // Lighter purple for editing
-    secondaryColor: "#A855F7",
-    glowColor: "#C084FC50",
+    primaryColor: "#EDECEC",
+    secondaryColor: "#D6D5D2",
+    glowColor: "#EDECEC50",
     icon: "pencil",
     animationType: 'float',
     animationFrames: 84,
@@ -249,15 +249,15 @@ const CURSOR_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   },
   question: {
     primaryColor: CURSOR.cream,
-    secondaryColor: "#E8E7E3",
-    glowColor: "#FAF9F560",
+    secondaryColor: "#D6D5D2",
+    glowColor: "#EDECEC60",
     icon: "help",
     animationType: 'pulse',
     animationFrames: 48,
     label: "Input"
   },
   plan_prompt: {
-    primaryColor: "#22D3EE",     // Cyan for plan mode
+    primaryColor: "#22D3EE",     // Cyan for plan mode (distinct from brand)
     secondaryColor: "#06B6D4",
     glowColor: "#22D3EE60",
     icon: "compass",
