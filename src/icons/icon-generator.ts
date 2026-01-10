@@ -1,6 +1,6 @@
 import type { ClaudeState, InstanceSource } from "../server/types.js";
 
-type AnimationType = 'none' | 'orbit' | 'ripple' | 'float' | 'pulse' | 'wave';
+type AnimationType = 'none' | 'orbit' | 'ripple' | 'float' | 'pulse' | 'wave' | 'breathing' | 'shake';
 
 interface StateConfig {
   primaryColor: string;
@@ -37,8 +37,8 @@ const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#C4684D",
     glowColor: "#D9765740",
     icon: "claude",
-    animationType: 'none',
-    animationFrames: 1,
+    animationType: 'breathing',
+    animationFrames: 120,  // 10 seconds at 12fps - very slow breathing
     label: "Ready"
   },
   running: {
@@ -100,8 +100,8 @@ const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#EF4444",
     glowColor: "#F8717140",
     icon: "alert",
-    animationType: 'none',
-    animationFrames: 1,
+    animationType: 'shake',
+    animationFrames: 24,  // 2 seconds at 12fps - shake then settle
     label: "Error"
   },
   disconnected: {
@@ -122,8 +122,8 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#3367D6",
     glowColor: "#4285F440",
     icon: "gemini",  // Gemini sparkle icon
-    animationType: 'none',
-    animationFrames: 1,
+    animationType: 'breathing',
+    animationFrames: 120,  // 10 seconds at 12fps - very slow breathing
     label: "Ready"
   },
   running: {
@@ -185,8 +185,8 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     secondaryColor: "#EF4444",
     glowColor: "#F8717140",
     icon: "alert",
-    animationType: 'none',
-    animationFrames: 1,
+    animationType: 'shake',
+    animationFrames: 24,  // 2 seconds at 12fps - shake then settle
     label: "Error"
   },
   disconnected: {
@@ -419,6 +419,76 @@ export class IconGenerator {
   }
 
   /**
+   * Generate hold progress ring - fills clockwise from top as user holds button
+   * @param progress - 0-1 progress value
+   * @param color - Ring color
+   */
+  private static generateHoldProgressRing(progress: number, color: string): string {
+    if (progress <= 0) return '';
+
+    const radius = 52;  // Larger than icon, smaller than background
+    const strokeWidth = 4;
+    const circumference = 2 * Math.PI * radius;
+
+    // Calculate stroke-dashoffset for clockwise fill from top
+    const dashOffset = circumference * (1 - progress);
+
+    // Glow effect intensity increases with progress
+    const glowOpacity = 0.1 + progress * 0.2;
+
+    return `
+    <!-- Hold progress background ring -->
+    <circle cx="0" cy="0" r="${radius}"
+      stroke="${color}" stroke-width="${strokeWidth}" fill="none"
+      opacity="0.15"/>
+    <!-- Hold progress glow -->
+    <circle cx="0" cy="0" r="${radius}"
+      stroke="${color}" stroke-width="${strokeWidth + 6}" fill="none"
+      opacity="${glowOpacity.toFixed(2)}"
+      stroke-dasharray="${circumference}"
+      stroke-dashoffset="${dashOffset.toFixed(2)}"
+      stroke-linecap="round"
+      transform="rotate(-90)"/>
+    <!-- Hold progress arc -->
+    <circle cx="0" cy="0" r="${radius}"
+      stroke="${color}" stroke-width="${strokeWidth}" fill="none"
+      stroke-dasharray="${circumference}"
+      stroke-dashoffset="${dashOffset.toFixed(2)}"
+      stroke-linecap="round"
+      transform="rotate(-90)"/>`;
+  }
+
+  /**
+   * Generate breathing animation for idle state - subtle scale and glow pulse
+   * @param frame - Current animation frame
+   * @param totalFrames - Total frames in the cycle
+   * @param color - Glow color
+   */
+  private static generateBreathingAnimation(frame: number, totalFrames: number, color: string): string {
+    const progress = frame / totalFrames;
+    const breathPhase = Math.sin(progress * Math.PI * 2);
+
+    // Very subtle glow pulse
+    const glowOpacity = 0.08 + breathPhase * 0.06;
+    const glowRadius = 42 + breathPhase * 4;
+
+    return `<circle cx="0" cy="0" r="${glowRadius.toFixed(1)}" fill="${color}" opacity="${glowOpacity.toFixed(2)}"/>`;
+  }
+
+  /**
+   * Generate shake animation offset for error state
+   * @param frame - Current animation frame
+   * @param totalFrames - Total frames in the cycle
+   * @returns X offset for transform
+   */
+  private static generateShakeOffset(frame: number, totalFrames: number): number {
+    const progress = frame / totalFrames;
+    // Quick oscillation that decays
+    const intensity = Math.sin(progress * Math.PI * 6) * 3 * (1 - progress);
+    return intensity;
+  }
+
+  /**
    * Generate animation layer based on type
    */
   private static generateAnimationLayer(
@@ -436,6 +506,11 @@ export class IconGenerator {
         return this.generatePulseGlow(frame, config.animationFrames, config.primaryColor);
       case 'wave':
         return this.generateWaveAnimation(frame, config.animationFrames, config.primaryColor);
+      case 'breathing':
+        return this.generateBreathingAnimation(frame, config.animationFrames, config.glowColor);
+      case 'shake':
+        // Shake animation doesn't add elements, it modifies the icon transform
+        return '';
       default:
         return '';
     }
@@ -447,8 +522,9 @@ export class IconGenerator {
    * @param frame - Animation frame number (default 0)
    * @param kittyAvailable - Whether Kitty remote control is available (shows green/red indicator)
    * @param source - Instance source ("claude" or "gemini") for color scheme
+   * @param holdProgress - Optional hold progress (0-1) to show progress ring
    */
-  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude"): string {
+  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude", holdProgress?: number): string {
     const stateConfigs = getStateConfigs(source);
     const config = stateConfigs[state];
     const iconPath = LUCIDE_ICONS[config.icon] || LUCIDE_ICONS.check;
@@ -458,10 +534,20 @@ export class IconGenerator {
       ? (frame / config.animationFrames) * 360
       : 0;
 
+    // Shake offset for error state
+    const shakeOffset = config.animationType === 'shake'
+      ? this.generateShakeOffset(frame, config.animationFrames)
+      : 0;
+
     // Animation layers
     const animationLayer = this.generateAnimationLayer(config, frame);
 
-    // Ambient glow for all states
+    // Hold progress ring (when user is holding button)
+    const holdProgressRing = holdProgress !== undefined && holdProgress > 0
+      ? this.generateHoldProgressRing(holdProgress, config.primaryColor)
+      : '';
+
+    // Ambient glow for non-animated states (except breathing which has its own glow)
     const ambientGlow = config.animationType === 'none'
       ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>`
       : '';
@@ -499,8 +585,11 @@ export class IconGenerator {
     ${animationLayer}
     ${ambientGlow}
 
-    <!-- Icon with rotation for loader -->
-    <g transform="rotate(${rotation})" filter="url(#glow)">
+    <!-- Hold progress ring -->
+    ${holdProgressRing}
+
+    <!-- Icon with rotation for loader and shake for error -->
+    <g transform="rotate(${rotation}) translate(${shakeOffset}, 0)" filter="url(#glow)">
       <g style="color: ${config.primaryColor}">
         ${iconPath}
       </g>
@@ -550,10 +639,124 @@ export class IconGenerator {
    * @param frame - Animation frame number (default 0)
    * @param kittyAvailable - Whether Kitty remote control is available
    * @param source - Instance source ("claude" or "gemini") for color scheme
+   * @param holdProgress - Optional hold progress (0-1) to show progress ring
    */
-  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude"): string {
-    const svg = this.generateFrame(state, frame, kittyAvailable, source);
+  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude", holdProgress?: number): string {
+    const svg = this.generateFrame(state, frame, kittyAvailable, source, holdProgress);
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  /**
+   * Generate a crossfade transition frame between two states
+   * @param fromState - The state transitioning from
+   * @param toState - The state transitioning to
+   * @param progress - Transition progress (0 = fromState, 1 = toState)
+   * @param frame - Animation frame number
+   * @param kittyAvailable - Whether Kitty remote control is available
+   * @param source - Instance source ("claude" or "gemini") for color scheme
+   * @param holdProgress - Optional hold progress (0-1) to show progress ring
+   */
+  static generateTransitionDataUrl(
+    fromState: ClaudeState,
+    toState: ClaudeState,
+    progress: number,
+    frame: number = 0,
+    kittyAvailable?: boolean,
+    source: InstanceSource = "claude",
+    holdProgress?: number
+  ): string {
+    const svg = this.generateTransitionFrame(fromState, toState, progress, frame, kittyAvailable, source, holdProgress);
+    return `data:image/svg+xml,${encodeURIComponent(svg)}`;
+  }
+
+  /**
+   * Generate a crossfade transition SVG frame
+   */
+  private static generateTransitionFrame(
+    fromState: ClaudeState,
+    toState: ClaudeState,
+    progress: number,
+    frame: number,
+    kittyAvailable?: boolean,
+    source: InstanceSource = "claude",
+    holdProgress?: number
+  ): string {
+    const stateConfigs = getStateConfigs(source);
+    const fromConfig = stateConfigs[fromState];
+    const toConfig = stateConfigs[toState];
+
+    // Calculate crossfade opacities
+    const fromOpacity = 1 - progress;
+    const toOpacity = progress;
+
+    // Get icon paths
+    const fromIconPath = LUCIDE_ICONS[fromConfig.icon] || LUCIDE_ICONS.check;
+    const toIconPath = LUCIDE_ICONS[toConfig.icon] || LUCIDE_ICONS.check;
+
+    // Use toState's color for status indicator (shows where we're going)
+    const indicatorColor = toConfig.primaryColor;
+
+    // Blend colors for transition effect
+    const blendedGlowColor = progress < 0.5 ? fromConfig.glowColor : toConfig.glowColor;
+
+    // Hold progress ring
+    const holdProgressRing = holdProgress !== undefined && holdProgress > 0
+      ? this.generateHoldProgressRing(holdProgress, toConfig.primaryColor)
+      : '';
+
+    // Kitty status indicator
+    const kittyIndicator = kittyAvailable !== undefined
+      ? `<!-- Kitty status indicator -->
+  <circle cx="26" cy="122" r="8" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}" opacity="0.9"/>
+  <circle cx="26" cy="122" r="5" fill="${ANTHROPIC.black}"/>
+  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`
+      : '';
+
+    return `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="${this.SIZE}" height="${this.SIZE}" fill="${ANTHROPIC.black}" rx="16"/>
+
+  <!-- Center group -->
+  <g transform="translate(${this.CENTER}, ${this.CENTER - 4})">
+
+    <!-- Blended ambient glow -->
+    <circle cx="0" cy="0" r="40" fill="${blendedGlowColor}"/>
+
+    <!-- Hold progress ring -->
+    ${holdProgressRing}
+
+    <!-- From state icon (fading out) -->
+    <g opacity="${fromOpacity.toFixed(2)}" filter="url(#glow)">
+      <g style="color: ${fromConfig.primaryColor}">
+        ${fromIconPath}
+      </g>
+    </g>
+
+    <!-- To state icon (fading in) -->
+    <g opacity="${toOpacity.toFixed(2)}" filter="url(#glow)">
+      <g style="color: ${toConfig.primaryColor}">
+        ${toIconPath}
+      </g>
+    </g>
+  </g>
+
+  <!-- Status indicator -->
+  <circle cx="118" cy="22" r="10" fill="${indicatorColor}" opacity="0.9"/>
+  <circle cx="118" cy="22" r="6" fill="${ANTHROPIC.black}"/>
+  <circle cx="118" cy="22" r="4" fill="${indicatorColor}"/>
+
+  ${kittyIndicator}
+</svg>`;
   }
 
   /**

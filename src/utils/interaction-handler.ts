@@ -20,6 +20,8 @@ export interface InteractionCallbacks {
   onSinglePress: () => void;
   onDoublePress: () => void;
   onHold: () => void;
+  onHoldProgress?: (progress: number) => void;  // 0-1 progress during hold
+  onHoldCancel?: () => void;  // Called when hold is cancelled (key released early)
 }
 
 export class InteractionHandler {
@@ -30,6 +32,7 @@ export class InteractionHandler {
   private clickTimeout: NodeJS.Timeout | null = null;
   private clickCount: number = 0;
   private holdTriggered: boolean = false;
+  private holdProgressInterval: NodeJS.Timeout | null = null;
 
   /** Maximum time between clicks for double-click detection (ms) */
   private static readonly DOUBLE_CLICK_THRESHOLD_MS = 300;
@@ -74,7 +77,25 @@ export class InteractionHandler {
 
     // Start hold detection timer
     logFn(`[KeyDown] Starting hold timer (${InteractionHandler.HOLD_THRESHOLD_MS}ms)`);
+
+    // Start hold progress reporting if callback is provided
+    if (this.callbacks.onHoldProgress) {
+      const holdStartTime = Date.now();
+      this.callbacks.onHoldProgress(0);  // Initial progress
+
+      this.holdProgressInterval = setInterval(() => {
+        const elapsed = Date.now() - holdStartTime;
+        const progress = Math.min(1, elapsed / InteractionHandler.HOLD_THRESHOLD_MS);
+        this.callbacks.onHoldProgress!(progress);
+      }, 50);  // Update every 50ms for smooth ring animation
+    }
+
     this.holdTimeout = setTimeout(() => {
+      // Stop progress reporting
+      if (this.holdProgressInterval) {
+        clearInterval(this.holdProgressInterval);
+        this.holdProgressInterval = null;
+      }
       // Cancel any pending click handlers
       if (this.clickTimeout) {
         clearTimeout(this.clickTimeout);
@@ -95,6 +116,12 @@ export class InteractionHandler {
 
     logFn(`[KeyUp] pressDuration=${pressDuration}ms, clickCount=${this.clickCount}, holdTriggered=${this.holdTriggered}`);
 
+    // Clear hold progress interval
+    if (this.holdProgressInterval) {
+      clearInterval(this.holdProgressInterval);
+      this.holdProgressInterval = null;
+    }
+
     // Clear hold timeout since key was released
     if (this.holdTimeout) {
       clearTimeout(this.holdTimeout);
@@ -106,6 +133,11 @@ export class InteractionHandler {
     if (this.holdTriggered) {
       logFn(`[KeyUp] Hold was triggered, ignoring key up`);
       return;
+    }
+
+    // Notify that hold was cancelled (released before threshold)
+    if (this.callbacks.onHoldCancel) {
+      this.callbacks.onHoldCancel();
     }
 
     // If press was long enough to be a hold, it was already handled
@@ -150,6 +182,10 @@ export class InteractionHandler {
     if (this.clickTimeout) {
       clearTimeout(this.clickTimeout);
       this.clickTimeout = null;
+    }
+    if (this.holdProgressInterval) {
+      clearInterval(this.holdProgressInterval);
+      this.holdProgressInterval = null;
     }
     this.clickCount = 0;
   }

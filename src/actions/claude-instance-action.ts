@@ -90,6 +90,14 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     // Store action reference for fetching fresh settings
     this.actionContexts.set(contextId, ev.action);
 
+    // Initialize animation controller first (needed for hold progress callbacks)
+    const animController = new AnimationController((dataUrl) => {
+      if (ev.action.isKey()) {
+        ev.action.setImage(dataUrl);
+      }
+    });
+    this.animationControllers.set(contextId, animController);
+
     // Initialize interaction handler for this action instance
     // Note: callbacks fetch fresh settings on each press to handle config changes
     this.interactionHandlers.set(
@@ -97,17 +105,21 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       new InteractionHandler({
         onSinglePress: () => this.handleSinglePress(contextId),
         onDoublePress: () => this.handleDoublePress(contextId),
-        onHold: () => this.handleHold(contextId)
+        onHold: () => {
+          // Clear hold progress ring when hold completes
+          animController.clearHoldProgress();
+          this.handleHold(contextId);
+        },
+        onHoldProgress: (progress: number) => {
+          // Update animation controller with hold progress for visual ring
+          animController.setHoldProgress(progress);
+        },
+        onHoldCancel: () => {
+          // Clear hold progress ring when hold is cancelled
+          animController.clearHoldProgress();
+        }
       })
     );
-
-    // Initialize animation controller
-    const animController = new AnimationController((dataUrl) => {
-      if (ev.action.isKey()) {
-        ev.action.setImage(dataUrl);
-      }
-    });
-    this.animationControllers.set(contextId, animController);
 
     // Connect to status server if not connected
     this.ensureWebSocketConnection();
