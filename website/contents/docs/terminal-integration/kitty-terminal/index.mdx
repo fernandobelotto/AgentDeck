@@ -1,0 +1,125 @@
+---
+title: Kitty Terminal
+description: Configure Kitty terminal for full remote control integration with AgentDeck.
+keywords: ["kitty", "terminal", "remote control", "configuration"]
+---
+
+## Kitty Terminal Integration
+
+AgentDeck has deep integration with [Kitty terminal](https://sw.kovidgoyal.net/kitty/) through its remote control API. This enables advanced features like window focusing, sending signals, and launching new Claude instances.
+
+## Required Configuration
+
+Add these lines to your `~/.config/kitty/kitty.conf`:
+
+```ini
+allow_remote_control yes
+listen_on unix:/tmp/kitty
+```
+
+<Note type="warning" title="Important">
+After changing the config, **restart Kitty** for the settings to take effect.
+</Note>
+
+## How It Works
+
+<Step>
+<StepItem title="Socket Detection">
+AgentDeck automatically detects Kitty sockets at `/tmp/kitty` or `/tmp/kitty-*` (PID-suffixed).
+</StepItem>
+<StepItem title="Binary Paths">
+On macOS, the plugin uses full paths to Kitty binaries (`/Applications/kitty.app/Contents/MacOS/kitten`) since Stream Deck plugins run in a sandboxed environment without access to shell PATH.
+</StepItem>
+<StepItem title="Interactive Shell">
+When launching new Claude instances, the plugin uses an interactive shell (`zsh -i -c claude`) to ensure shell aliases are available.
+</StepItem>
+</Step>
+
+## Socket Path Priority
+
+AgentDeck checks for Kitty sockets in this order:
+
+1. `KITTY_LISTEN_ON` environment variable
+2. Auto-detected `/tmp/kitty` or `/tmp/kitty-*` sockets
+3. Default fallback to `unix:/tmp/kitty`
+
+## Verifying Remote Control
+
+Test that remote control is working:
+
+```bash
+kitten @ ls
+```
+
+This should return JSON with information about open windows.
+
+## Features with Remote Control
+
+With remote control enabled, AgentDeck can:
+
+| Feature | Description |
+| ------- | ----------- |
+| Focus Window | Focus specific Kitty window by ID |
+| List Windows | Query all open Kitty windows |
+| Launch Instance | Open new tab/window with Claude |
+| Send Signal | Send keyboard signals to window |
+
+## Troubleshooting
+
+### "Remote Control Not Available" in Property Inspector
+
+<Step>
+<StepItem title="Check Configuration">
+Ensure `allow_remote_control yes` is in your `kitty.conf`.
+</StepItem>
+<StepItem title="Restart Kitty">
+Restart Kitty after changing the configuration.
+</StepItem>
+<StepItem title="Verify Socket">
+Check that the socket exists by running `ls /tmp/kitty*` in your terminal.
+</StepItem>
+</Step>
+
+### Button Press Doesn't Open New Claude Window
+
+<Step>
+<StepItem title="Test Remote Control">
+Verify remote control works manually by running `kitten @ ls`.
+</StepItem>
+<StepItem title="Check Logs">
+Review plugin logs in `com.agentdeck.plugin.sdPlugin/logs/`.
+</StepItem>
+<StepItem title="Verify Installation">
+Ensure Kitty is installed at `/Applications/kitty.app` (macOS).
+</StepItem>
+</Step>
+
+### Claude Command Not Found When Launching
+
+The `claude` command may be an alias in your shell config:
+
+- AgentDeck launches with `-i` flag to load interactive shell config
+- Ensure your Claude alias is defined in `~/.zshrc` (not just `~/.zprofile`)
+
+## Launch Fallback
+
+If remote control fails, AgentDeck falls back to launching Kitty directly via the binary path:
+
+```bash
+/Applications/kitty.app/Contents/MacOS/kitty --single-instance zsh -i -c claude
+```
+
+## Implementation Details
+
+Kitty integration is implemented in `src/utils/kitty-remote.ts`:
+
+- Socket detection and connection
+- Remote command execution
+- Window management
+- Error handling with fallbacks
+
+## Best Practices
+
+1. **Always enable remote control** for the best AgentDeck experience
+2. **Use PID-suffixed sockets** (`listen_on unix:/tmp/kitty-$KITTY_PID`) if running multiple Kitty instances
+3. **Define Claude as an alias** in `~/.zshrc` for consistent launching

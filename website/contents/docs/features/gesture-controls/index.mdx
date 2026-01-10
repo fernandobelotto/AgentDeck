@@ -1,0 +1,89 @@
+---
+title: Gesture Controls
+description: Learn how to use gesture controls to interact with your AI assistant from your Stream Deck.
+keywords: ["gestures", "controls", "press", "hold", "double press"]
+---
+
+## Gesture Controls
+
+AgentDeck supports multiple gesture types to give you full control over your AI assistant without switching windows.
+
+## Available Gestures
+
+| Gesture | Threshold | Action |
+| ------- | --------- | ------ |
+| Single Press | - | Focus the terminal window |
+| Double Press | 300ms | Cancel current operation |
+| Hold | 500ms | Approve pending permission |
+
+## Single Press
+
+A single press focuses the terminal window where your AI assistant is running. This is useful when you want to:
+
+- See the full output of a command
+- Type additional input
+- Review the conversation history
+
+The terminal application used depends on your configuration in the Property Inspector.
+
+## Double Press
+
+Double pressing (two presses within 300ms) sends a cancel signal to the AI assistant. Use this when:
+
+- You want to interrupt a long-running operation
+- The AI is going in the wrong direction
+- You need to change your request
+
+<Note type="warning" title="Cancel Behavior">
+Canceling will stop the current operation. Any partial work may not be saved depending on what the AI was doing.
+</Note>
+
+## Hold
+
+Holding the key for 500ms or longer approves pending permission requests. This is particularly useful when the AI needs to:
+
+- Execute a potentially dangerous command
+- Modify protected files
+- Access sensitive resources
+
+The permission state is indicated by a red shield icon. When you see this icon, holding the key will approve the pending request.
+
+## Timing Thresholds
+
+The gesture detection system uses the following thresholds:
+
+```
+Press detected
+    │
+    ├──> Hold for 500ms ──> Permission Approval
+    │
+    └──> Release before 500ms
+              │
+              ├──> Another press within 300ms ──> Double Press (Cancel)
+              │
+              └──> No press within 300ms ──> Single Press (Focus)
+```
+
+## Customizing Gestures
+
+The gesture thresholds are defined in `src/utils/interaction-handler.ts`:
+
+```typescript
+const DOUBLE_PRESS_THRESHOLD = 300 // ms
+const HOLD_THRESHOLD = 500 // ms
+```
+
+You can modify these values and rebuild the plugin to adjust the timing to your preference.
+
+## Terminal Focus Behavior
+
+The single press focus behavior varies by terminal:
+
+| Terminal | Focus Method |
+| -------- | ------------ |
+| Kitty | Uses `kitten @` remote control |
+| iTerm2 | AppleScript |
+| Terminal.app | AppleScript |
+| Other | System default focus |
+
+For best results with Kitty terminal, see the [Kitty Terminal Integration](/docs/terminal-integration/kitty-terminal) guide.

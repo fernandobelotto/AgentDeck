@@ -1,0 +1,155 @@
+---
+title: Troubleshooting
+description: Solutions to common issues when using AgentDeck.
+keywords: ["troubleshooting", "issues", "problems", "debugging"]
+---
+
+## Troubleshooting
+
+This guide covers common issues and their solutions when using AgentDeck.
+
+## Plugin Issues
+
+### Plugin Not Showing in Stream Deck
+
+<Step>
+<StepItem title="Check Plugin Location">
+Ensure the plugin is in the correct Plugins directory. On macOS: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`. On Windows: `%appdata%\Elgato\StreamDeck\Plugins/`.
+</StepItem>
+<StepItem title="Restart Stream Deck">
+Close and reopen the Stream Deck application.
+</StepItem>
+<StepItem title="Check Plugin Logs">
+Review logs at `com.agentdeck.plugin.sdPlugin/logs/` for errors.
+</StepItem>
+<StepItem title="Validate Manifest">
+Run `streamdeck validate com.agentdeck.plugin.sdPlugin` to check the manifest.
+</StepItem>
+</Step>
+
+### Plugin Crashes on Startup
+
+1. Check Node.js version (requires 20+)
+2. Review crash logs in the plugin logs directory
+3. Try rebuilding: `npm run build`
+4. Re-link the plugin: `streamdeck link com.agentdeck.plugin.sdPlugin`
+
+## Status Issues
+
+### Status Not Updating
+
+<Step>
+<StepItem title="Verify Hooks Configuration">
+Check that hooks are configured in `~/.claude/settings.json` (or Gemini settings).
+</StepItem>
+<StepItem title="Check Dependencies">
+Ensure `jq` and `curl` are installed by running `which jq curl`.
+</StepItem>
+<StepItem title="Test Hook Script">
+Test the hook script manually with `echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.agentdeck/hooks/status-reporter.sh`.
+</StepItem>
+<StepItem title="Check Server Health">
+Verify the server is running: `curl http://127.0.0.1:19847/health`.
+</StepItem>
+</Step>
+
+### Key Shows Disconnected (Gray X)
+
+This means the Stream Deck key isn't receiving updates for that session:
+
+1. Ensure the AI session is running
+2. Check that hooks are configured
+3. Verify the correct session is selected in Property Inspector
+4. Check server logs for connection issues
+
+## Server Issues
+
+### Server Port Already in Use
+
+If port 19847 is already in use:
+
+```bash
+# Find what's using the port
+lsof -i :19847
+
+# Kill the process if needed
+kill <PID>
+```
+
+The plugin assumes the server is already running if the port is in use.
+
+### Cannot Connect to Server
+
+1. Check if the server is running: `curl http://127.0.0.1:19847/health`
+2. Verify no firewall is blocking localhost connections
+3. Check plugin logs for server startup errors
+
+## Terminal Issues
+
+### Focus Not Working
+
+**macOS:**
+- Grant Accessibility permissions to Stream Deck
+- For Kitty: Ensure remote control is enabled
+- Check AppleScript permissions in System Preferences
+
+**Windows:**
+- Run Stream Deck as administrator
+- Check Windows security settings
+
+### Kitty Remote Control Issues
+
+See the [Kitty Terminal](/docs/terminal-integration/kitty-terminal) guide for detailed troubleshooting.
+
+Quick checks:
+```bash
+# Verify socket exists
+ls /tmp/kitty*
+
+# Test remote control
+kitten @ ls
+```
+
+### Claude Command Not Found
+
+When launching new instances, if "claude" is not found:
+
+1. Ensure Claude is installed and in your PATH
+2. If using an alias, define it in `~/.zshrc` (not `~/.zprofile`)
+3. AgentDeck uses `-i` flag to load interactive shell config
+
+## Debugging
+
+### Enable Debug Logging
+
+Check plugin logs at:
+- **macOS**: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/com.agentdeck.plugin.sdPlugin/logs/`
+- **Windows**: `%appdata%\Elgato\StreamDeck\Plugins\com.agentdeck.plugin.sdPlugin\logs\`
+
+### Manual API Testing
+
+```bash
+# Check server health
+curl http://127.0.0.1:19847/health
+
+# List all instances
+curl http://127.0.0.1:19847/instances
+
+# Send a test status
+curl -X POST http://127.0.0.1:19847/status \
+  -H "Content-Type: application/json" \
+  -d '{"session_id":"test","state":"idle"}'
+```
+
+### WebSocket Testing
+
+Use a WebSocket client to connect to `ws://127.0.0.1:19847` and observe messages.
+
+## Getting Help
+
+If you're still having issues, please contact support with:
+
+- Operating system and version
+- Stream Deck model and software version
+- Relevant log output
+- Steps to reproduce the issue

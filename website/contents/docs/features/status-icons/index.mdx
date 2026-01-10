@@ -1,0 +1,89 @@
+---
+title: Status Icons
+description: Understand what each status icon means and how AgentDeck visualizes your AI assistant's state.
+keywords: ["status icons", "states", "animations", "visual feedback"]
+---
+
+## Status Icons
+
+AgentDeck uses animated icons to show the current state of your AI assistant. Each state has a distinct color and icon for quick recognition.
+
+## State Reference
+
+| Icon | Color | State | Description |
+| ---- | ----- | ----- | ----------- |
+| Checkmark | Green | `idle` | Claude Code is ready for input |
+| Spinner | Blue | `running` | Processing a request |
+| Gear | Orange | `tool_use` | Executing a tool (Bash, Read, etc.) |
+| Pencil | Purple | `editing` | Modifying files |
+| Question Mark | Cyan | `question` | Waiting for user input |
+| Shield | Red | `permission` | Pending permission approval |
+| Exclamation | Red | `error` | An error occurred |
+| X | Gray | `disconnected` | Session not connected |
+
+## State Details
+
+### Idle (Green Checkmark)
+
+The AI assistant is ready and waiting for your next request. This is the default state after completing a task or when a new session starts.
+
+### Running (Blue Spinner)
+
+The AI is actively processing your request. The spinner animates to indicate ongoing activity.
+
+### Tool Use (Orange Gear)
+
+The AI is executing a tool such as:
+- Bash commands
+- Reading files
+- Searching with Glob/Grep
+- Other tool operations
+
+### Editing (Purple Pencil)
+
+The AI is modifying files using:
+- Edit tool
+- Write tool
+- NotebookEdit tool
+
+### Question (Cyan Question Mark)
+
+The AI is waiting for user input. This occurs when:
+- Using AskUserQuestion tool
+- Task tool requires input
+- Clarification needed
+
+### Permission (Red Shield)
+
+A permission request is pending approval. Actions that require explicit permission will trigger this state.
+
+<Note title="Quick Approval">
+You can approve pending permissions with a long press (500ms) on the Stream Deck key.
+</Note>
+
+### Error (Red Exclamation)
+
+An error occurred during processing. Check the terminal for details.
+
+### Disconnected (Gray X)
+
+The session is not connected to the AgentDeck server. This happens when:
+- The AI session has ended
+- Hooks are not configured
+- Server communication failed
+
+## Animation Details
+
+AgentDeck runs animations at **10 FPS** (frames per second) for smooth visual feedback without excessive CPU usage.
+
+Animated states:
+- `running` - Rotating spinner
+- `tool_use` - Rotating gear
+- `editing` - Pulsing pencil
+
+Static states:
+- `idle`, `question`, `permission`, `error`, `disconnected`
+
+## Customization
+
+The icon system is built with SVG generation, making it easy to customize colors and shapes if needed. The icon generator is located at `src/icons/icon-generator.ts`.

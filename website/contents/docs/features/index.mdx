@@ -1,0 +1,90 @@
+---
+title: Features
+description: Explore all the features of AgentDeck including status icons, gesture controls, and multi-instance support.
+keywords: ["features", "status icons", "gestures", "multi-instance"]
+---
+
+## Features
+
+AgentDeck provides a comprehensive set of features to help you monitor and control your AI coding assistants.
+
+<CardGrid>
+  <Card
+    subtitle="Visual"
+    title="Status Icons"
+    description="Real-time animated icons showing the current state of your AI assistant."
+    href="/docs/features/status-icons"
+  />
+  <Card
+    subtitle="Control"
+    title="Gesture Controls"
+    description="Single press, double press, and hold actions for different operations."
+    href="/docs/features/gesture-controls"
+  />
+  <Card
+    subtitle="Scale"
+    title="Multi-Instance"
+    description="Monitor multiple AI sessions on different Stream Deck keys."
+    href="/docs/features/multi-instance"
+  />
+</CardGrid>
+
+## Feature Overview
+
+### Real-time Status Display
+
+AgentDeck displays animated icons that update in real-time based on your AI assistant's state:
+
+- **Idle**: Ready for input
+- **Running**: Processing a request
+- **Tool Use**: Executing a tool
+- **Editing**: Modifying files
+- **Question**: Waiting for user input
+- **Permission**: Pending approval
+- **Error**: An error occurred
+- **Disconnected**: Session not connected
+
+### Gesture Controls
+
+Control your AI assistant without leaving your keyboard:
+
+| Gesture | Action |
+| ------- | ------ |
+| Single Press | Focus terminal window |
+| Double Press | Cancel current operation |
+| Hold (500ms) | Approve pending permission |
+
+### Multi-Instance Support
+
+Assign each Stream Deck key to a different AI session:
+
+- Monitor multiple Claude Code instances
+- Monitor multiple Gemini CLI instances
+- Mix and match different AI assistants
+
+### Terminal Integration
+
+Deep integration with terminal applications:
+
+- Focus terminal windows
+- Send keyboard signals
+- Launch new AI instances
+- Works with Kitty, iTerm2, Terminal.app, and more
+
+## Technical Specifications
+
+| Feature | Specification |
+| ------- | ------------- |
+| Animation FPS | 10 frames per second |
+| Server Port | 19847 |
+| Protocol | HTTP + WebSocket |
+| Hold Threshold | 500ms |
+| Double Press Threshold | 300ms |
+
+## Next Steps
+
+Dive deeper into each feature:
+
+- [Status Icons](/docs/features/status-icons) - Learn what each icon means
+- [Gesture Controls](/docs/features/gesture-controls) - Master the controls
+- [Multi-Instance](/docs/features/multi-instance) - Set up multiple sessions

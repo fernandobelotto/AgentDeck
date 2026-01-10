@@ -53,7 +53,12 @@ case "$hook_event" in
             "Bash"|"Read"|"Glob"|"Grep"|"LS"|"WebFetch"|"WebSearch")
                 state="tool_use"
                 ;;
+            "EnterPlanMode")
+                # Plan mode entry prompt (Yes/No)
+                state="plan_prompt"
+                ;;
             "Task"|"AskUserQuestion")
+                # Interactive questions (single/multi-select options)
                 state="question"
                 ;;
             *)
@@ -137,6 +142,10 @@ if [[ "$AGENTDECK_VT_ENABLED" == "true" ]] && [[ -t 0 || -e /dev/tty ]]; then
         "question")
             progress_state="4"  # Warning (needs attention)
             window_title="${window_title} - Waiting for Input"
+            ;;
+        "plan_prompt")
+            progress_state="4"  # Warning (needs attention)
+            window_title="${window_title} - Plan Mode?"
             ;;
         "permission")
             progress_state="4"  # Warning (needs attention)

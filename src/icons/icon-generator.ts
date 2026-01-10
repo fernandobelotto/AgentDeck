@@ -77,6 +77,15 @@ const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     animationFrames: 48,  // 4 seconds at 12fps
     label: "Input"
   },
+  plan_prompt: {
+    primaryColor: "#22D3EE",     // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    animationType: 'pulse',
+    animationFrames: 48,  // 4 seconds at 12fps
+    label: "Plan?"
+  },
   permission: {
     primaryColor: "#F87171",
     secondaryColor: "#EF4444",
@@ -152,6 +161,15 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
     animationType: 'pulse',
     animationFrames: 48,
     label: "Input"
+  },
+  plan_prompt: {
+    primaryColor: "#22D3EE",     // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    animationType: 'pulse',
+    animationFrames: 48,
+    label: "Plan?"
   },
   permission: {
     primaryColor: "#F87171",
@@ -234,6 +252,12 @@ const LUCIDE_ICONS: Record<string, string> = {
           stroke="currentColor" stroke-width="0.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <line x1="0" y1="-8" x2="0" y2="2" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
     <circle cx="0" cy="10" r="1.8" fill="currentColor"/>`,
+
+  // Compass icon for plan mode - navigation/direction
+  compass: `
+    <circle cx="0" cy="0" r="28" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>
+    <polygon points="0,-18 6,0 0,18 -6,0" fill="currentColor" opacity="0.8"/>
+    <circle cx="0" cy="0" r="4" fill="currentColor"/>`,
 
   alert: `
     <circle cx="0" cy="0" r="28" stroke="currentColor" stroke-width="2.5" fill="none" opacity="0.3"/>

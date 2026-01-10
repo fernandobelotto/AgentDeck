@@ -1,0 +1,169 @@
+---
+title: Configuration
+description: Configure Claude Code and Gemini CLI hooks to enable status reporting to AgentDeck.
+keywords: ["configuration", "hooks", "claude code", "gemini cli", "setup"]
+---
+
+## Configuration
+
+AgentDeck requires hooks to be configured in your AI assistant to report status changes. This page covers configuration for both Claude Code and Gemini CLI.
+
+## Claude Code Configuration
+
+<Note type="warning" title="Important">
+You must manually add the hooks to your Claude Code configuration. The installation does NOT modify your settings automatically.
+</Note>
+
+Edit `~/.claude/settings.json` and add the hooks configuration:
+
+```json title="~/.claude/settings.json"
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.agentdeck/hooks/status-reporter.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+<Note title="Existing Hooks?">
+If you have existing hooks, merge them carefully with the AgentDeck hooks configuration.
+</Note>
+
+## Gemini CLI Configuration
+
+For Gemini CLI, the configuration is similar. Edit your Gemini CLI settings and add the AgentDeck hooks.
+
+## Verifying Hook Configuration
+
+After configuring hooks, restart your AI assistant and test that status updates are being sent:
+
+### Test the Hook Script
+
+```bash
+echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.agentdeck/hooks/status-reporter.sh
+```
+
+### Check Server Health
+
+```bash
+curl http://127.0.0.1:19847/health
+```
+
+### View Active Instances
+
+```bash
+curl http://127.0.0.1:19847/instances
+```
+
+## Hook Events
+
+The following hook events are supported:
+
+| Event | Description | State |
+| ----- | ----------- | ----- |
+| `SessionStart` | New session started | `idle` |
+| `SessionEnd` | Session ended | `disconnected` |
+| `PreToolUse` | Tool is about to execute | Varies by tool |
+| `PostToolUse` | Tool execution completed | `idle` |
+| `Stop` | Processing stopped | `idle` |
+| `Notification` | Notification received | `question` |
+| `PermissionRequest` | Permission needed | `permission` |
+
+## State Mapping
+
+Different tools map to different states:
+
+| Tool | State |
+| ---- | ----- |
+| Edit, Write | `editing` |
+| Bash, Read, Glob, Grep | `tool_use` |
+| Task, AskUserQuestion | `question` |
+| PermissionRequest | `permission` |
+
+## Next Steps
+
+- Explore [status icons](/docs/features/status-icons) to understand what each state looks like
+- Learn about [gesture controls](/docs/features/gesture-controls)
+- Set up [Kitty terminal integration](/docs/terminal-integration/kitty-terminal) for advanced features

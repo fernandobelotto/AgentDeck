@@ -6,6 +6,11 @@ export type InstanceSource = "claude" | "gemini";
 /**
  * Claude Code instance states that can be visualized on the Stream Deck
  * Also used by Gemini CLI instances
+ *
+ * Input-waiting states:
+ * - permission: Tool permission request (Yes/Yes for all/No) - e.g., Bash, Edit
+ * - plan_prompt: Plan mode entry prompt (Yes/No) - EnterPlanMode tool
+ * - question: Interactive questions (single/multi-select) - AskUserQuestion tool
  */
 export type ClaudeState =
   | "idle"
@@ -13,6 +18,7 @@ export type ClaudeState =
   | "tool_use"
   | "editing"
   | "question"
+  | "plan_prompt"
   | "permission"
   | "error"
   | "disconnected";

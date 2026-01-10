@@ -1,0 +1,84 @@
+---
+title: Introduction
+description: AgentDeck is a Stream Deck plugin to monitor and control your Claude Code and Gemini CLI instances with animated status icons and gesture controls.
+keywords: ["agentdeck", "stream deck", "claude code", "gemini cli", "plugin"]
+---
+
+![AgentDeck Banner](/images/banner.svg "AgentDeck")
+
+## AgentDeck
+
+**AgentDeck** is a Stream Deck plugin that brings your AI coding assistants to your fingertips. Monitor and control Claude Code and Gemini CLI instances with real-time animated status icons and intuitive gesture controls.
+
+<CardGrid>
+  <Card
+    subtitle="Prerequisites"
+    title="Requirements"
+    description="Check the hardware and software requirements before installing."
+    href="/docs/introduction/requirements"
+  />
+  <Card
+    subtitle="Get Started"
+    title="Installation"
+    description="Follow the quick start guide to install AgentDeck and connect it to your AI assistants."
+    href="/docs/introduction/installation"
+  />
+  <Card
+    subtitle="Setup"
+    title="Configuration"
+    description="Configure Claude Code and Gemini CLI hooks to enable status reporting."
+    href="/docs/introduction/configuration"
+  />
+  <Card
+    subtitle="Learn"
+    title="Features"
+    description="Explore all the features including status icons, gestures, and multi-instance support."
+    href="/docs/features"
+  />
+</CardGrid>
+
+## Why AgentDeck?
+
+When working with AI coding assistants like Claude Code or Gemini CLI, you often need to:
+- Know when the AI is thinking, executing tools, or waiting for input
+- Quickly approve permission requests without switching windows
+- Cancel long-running operations
+- Focus the terminal window to see what's happening
+
+AgentDeck puts all these controls on your Stream Deck, letting you stay focused on your work while maintaining full awareness of your AI assistant's state.
+
+## Key Features
+
+| Feature | Description |
+| ------- | ----------- |
+| **Real-time Status** | Animated icons showing current state (idle, running, editing, etc.) |
+| **Gesture Controls** | Single press, double press, and hold for different actions |
+| **Multi-Instance** | Monitor multiple AI sessions on different Stream Deck keys |
+| **Terminal Focus** | Quickly bring the terminal window to focus |
+| **Permission Approval** | Approve pending permissions with a long press |
+
+## Supported AI Assistants
+
+AgentDeck currently supports:
+
+- **Claude Code** - Anthropic's AI coding assistant
+- **Gemini CLI** - Google's Gemini-powered CLI tool
+
+## Prerequisites
+
+Before installing AgentDeck, check the [Requirements](/docs/introduction/requirements) page to ensure you have:
+
+- **Stream Deck** hardware and software (6.0+)
+- **Node.js** 20+ and npm
+- **Claude Code** or **Gemini CLI** (at least one AI assistant)
+- **jq** and **curl** (for hook scripts)
+- **Kitty Terminal** (recommended for full terminal integration)
+
+## Quick Start
+
+1. [Install the plugin](/docs/introduction/installation)
+2. [Configure hooks](/docs/introduction/configuration) for your AI assistant
+3. Add a "Claude Instance" or "Gemini Instance" action to your Stream Deck
+4. Select which session to monitor in the Property Inspector
+
+Ready to get started? Head to the [Installation Guide](/docs/introduction/installation).

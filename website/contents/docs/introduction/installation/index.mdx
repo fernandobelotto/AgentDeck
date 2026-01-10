@@ -1,0 +1,99 @@
+---
+title: Installation
+description: Step-by-step guide to install the AgentDeck Stream Deck plugin.
+keywords: ["installation", "setup", "stream deck", "plugin"]
+---
+
+## Installation
+
+Follow these steps to install AgentDeck on your system.
+
+### 1. Extract the Plugin
+
+Extract the AgentDeck package to a directory of your choice:
+
+```bash
+cd AgentDeck
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Build the Plugin
+
+```bash
+npm run build
+```
+
+### 4. Link the Plugin to Stream Deck
+
+Using the Stream Deck CLI:
+
+```bash
+streamdeck link com.agentdeck.plugin.sdPlugin
+```
+
+Or manually copy the `com.agentdeck.plugin.sdPlugin` folder to your plugins directory:
+
+**macOS:**
+```bash
+cp -r com.agentdeck.plugin.sdPlugin ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/
+```
+
+**Windows:**
+```bash
+copy com.agentdeck.plugin.sdPlugin %appdata%\Elgato\StreamDeck\Plugins\
+```
+
+### 5. Install Hook Script
+
+The hook script reports AI assistant status to the AgentDeck server:
+
+```bash
+mkdir -p ~/.agentdeck/hooks
+cp hooks/status-reporter.sh ~/.agentdeck/hooks/
+chmod +x ~/.agentdeck/hooks/status-reporter.sh
+```
+
+### 6. Configure Hooks
+
+See the [Configuration](/docs/introduction/configuration) guide to set up hooks for your AI assistant.
+
+### 7. Restart Stream Deck
+
+After installation, restart the Stream Deck application to load the new plugin.
+
+## Verifying Installation
+
+To verify the installation was successful:
+
+1. Open the Stream Deck application
+2. Look for "AgentDeck" in the action list
+3. Drag a "Claude Instance" or "Gemini Instance" action to a key
+
+<Note title="Plugin Not Appearing?">
+If the plugin doesn't appear in Stream Deck, check the plugin logs at `com.agentdeck.plugin.sdPlugin/logs/` for any errors.
+</Note>
+
+## Development Mode
+
+For development, you can use watch mode to auto-rebuild on changes:
+
+```bash
+npm run watch
+```
+
+After changes, restart the plugin:
+
+```bash
+streamdeck restart com.agentdeck.plugin
+```
+
+## Next Steps
+
+- [Configure hooks](/docs/introduction/configuration) for your AI assistant
+- Learn about [status icons](/docs/features/status-icons)
+- Explore [gesture controls](/docs/features/gesture-controls)

@@ -1,0 +1,113 @@
+---
+title: Requirements
+description: Hardware and software requirements for using AgentDeck.
+keywords: ["requirements", "prerequisites", "stream deck", "kitty", "terminal"]
+---
+
+## Requirements
+
+Before installing AgentDeck, ensure you have the following hardware and software.
+
+## Hardware
+
+| Requirement | Description |
+| ----------- | ----------- |
+| Stream Deck | Any Elgato Stream Deck model (Standard, Mini, XL, MK.2, Plus, Neo) |
+
+## Software
+
+### Required
+
+| Software | Version | Description |
+| -------- | ------- | ----------- |
+| Stream Deck Software | 6.0+ | Elgato's official Stream Deck application |
+| Node.js | 20+ | Required for building and running the plugin |
+| npm | 9+ | Package manager for installing dependencies |
+| jq | Any | JSON processor used by hook scripts |
+| curl | Any | HTTP client used by hook scripts |
+
+### AI Assistants (at least one)
+
+| Software | Description |
+| -------- | ----------- |
+| Claude Code | Anthropic's AI coding assistant CLI |
+| Gemini CLI | Google's Gemini AI assistant for terminal |
+
+<Note title="AI Assistant Required">
+You need at least one AI assistant installed. AgentDeck supports both Claude Code and Gemini CLI, and you can use them simultaneously.
+</Note>
+
+## Terminal (Recommended)
+
+For the best experience, we recommend using Kitty terminal:
+
+| Terminal | Support Level | Features |
+| -------- | ------------- | -------- |
+| Kitty | Full | Focus, remote control, launch new instances |
+| iTerm2 | Limited | Focus via AppleScript |
+| Terminal.app | Limited | Focus via AppleScript |
+| Windows Terminal | Limited | Focus via PowerShell |
+
+<Note type="info" title="Why Kitty?">
+Kitty terminal provides full remote control capabilities through its socket-based API, enabling AgentDeck to focus windows, launch new instances, and send signals. Other terminals only support basic window focusing.
+</Note>
+
+## Operating System
+
+| Platform | Status |
+| -------- | ------ |
+| macOS | Fully supported |
+| Windows | Supported with limitations |
+| Linux | Untested |
+
+## Verifying Requirements
+
+Run these commands to verify your system meets the requirements:
+
+```bash
+# Check Node.js version (should be 20+)
+node --version
+
+# Check npm version
+npm --version
+
+# Check jq is installed
+which jq
+
+# Check curl is installed
+which curl
+
+# Check Stream Deck CLI (optional, for development)
+streamdeck --version
+```
+
+## Installing Dependencies
+
+### macOS (Homebrew)
+
+```bash
+# Install jq and curl if not present
+brew install jq curl
+
+# Install Kitty terminal (recommended)
+brew install --cask kitty
+```
+
+### Windows
+
+```powershell
+# Install jq using Chocolatey
+choco install jq
+
+# curl is included in Windows 10+
+```
+
+## Next Steps
+
+Once you have all requirements installed:
+
+<Card
+  title="Installation"
+  description="Follow the step-by-step installation guide to set up AgentDeck."
+  href="/docs/introduction/installation"
+/>

@@ -1,0 +1,81 @@
+---
+title: Terminal Integration
+description: Learn how AgentDeck integrates with terminal applications for focusing windows and sending commands.
+keywords: ["terminal", "integration", "kitty", "iterm", "focus"]
+---
+
+## Terminal Integration
+
+AgentDeck provides deep integration with terminal applications, allowing you to focus windows, send signals, and launch new AI instances directly from your Stream Deck.
+
+## Supported Terminals
+
+| Terminal | Focus | Remote Control | Launch |
+| -------- | ----- | -------------- | ------ |
+| Kitty | Full | Full | Full |
+| iTerm2 | AppleScript | Limited | Limited |
+| Terminal.app | AppleScript | Limited | Limited |
+| Windows Terminal | PowerShell | Limited | Limited |
+
+## Focus Methods
+
+AgentDeck uses different methods to focus terminal windows depending on your platform and terminal:
+
+### macOS
+
+**Kitty Terminal:**
+Uses `kitten @` remote control for precise window focusing:
+```bash
+kitten @ focus-window
+```
+
+**Other Terminals:**
+Uses AppleScript to activate the terminal:
+```applescript
+tell application "iTerm" to activate
+```
+
+### Windows
+
+Uses PowerShell to focus windows:
+```powershell
+(New-Object -ComObject WScript.Shell).AppActivate("Terminal Name")
+```
+
+## Remote Control Features
+
+When using Kitty terminal with remote control enabled, AgentDeck can:
+
+- Focus specific windows by ID
+- Send keyboard input
+- Launch new windows/tabs
+- Query window state
+
+<Card
+  subtitle="Recommended"
+  title="Kitty Terminal Setup"
+  description="For the best experience, configure Kitty terminal with remote control enabled."
+  href="/docs/terminal-integration/kitty-terminal"
+/>
+
+## Configuration
+
+Terminal preferences are set in the Property Inspector:
+
+1. Click on the Stream Deck key
+2. In the Property Inspector, find "Terminal App"
+3. Select your preferred terminal
+
+The plugin will use the appropriate focus method for the selected terminal.
+
+## Implementation Details
+
+Terminal integration is implemented in `src/utils/`:
+
+- `terminal-focus.ts` - AppleScript/PowerShell commands
+- `kitty-remote.ts` - Kitty-specific remote control
+
+## Next Steps
+
+- [Set up Kitty terminal integration](/docs/terminal-integration/kitty-terminal) for full remote control
+- Learn about [gesture controls](/docs/features/gesture-controls) that use terminal integration

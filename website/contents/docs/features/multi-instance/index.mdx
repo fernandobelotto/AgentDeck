@@ -1,0 +1,104 @@
+---
+title: Multi-Instance Support
+description: Monitor and control multiple AI assistant sessions from your Stream Deck.
+keywords: ["multi-instance", "multiple sessions", "stream deck keys"]
+---
+
+## Multi-Instance Support
+
+AgentDeck allows you to monitor multiple AI assistant sessions simultaneously, each on a different Stream Deck key.
+
+## Use Cases
+
+- **Multiple Projects**: Work on different codebases with separate Claude Code instances
+- **Different Assistants**: Run Claude Code and Gemini CLI side by side
+- **Parallel Tasks**: Have multiple AI sessions for different tasks
+
+## Setup
+
+### 1. Add Multiple Actions
+
+Drag multiple "Claude Instance" or "Gemini Instance" actions to your Stream Deck.
+
+### 2. Configure Each Key
+
+In the Property Inspector for each key:
+
+1. Select which session to monitor from the dropdown
+2. Optionally set a custom display name
+3. Configure terminal app if needed
+
+### 3. Start Multiple Sessions
+
+Start your AI sessions in different terminal windows. Each session will have a unique session ID that AgentDeck uses to differentiate them.
+
+## Session Identification
+
+Sessions are identified by their unique session ID, which is generated when the AI assistant starts. The ID is:
+
+- Automatically assigned by Claude Code / Gemini CLI
+- Sent with every hook event
+- Used to route status updates to the correct Stream Deck key
+
+## Property Inspector Options
+
+Each Stream Deck key can be configured with:
+
+| Option | Description |
+| ------ | ----------- |
+| Session | Select which session to monitor |
+| Display Name | Custom name shown on the key |
+| Terminal App | Terminal application to focus |
+
+## Instance Manager
+
+AgentDeck's Instance Manager (`src/server/instance-manager.ts`) tracks all active sessions:
+
+- Maintains state for each session
+- Routes WebSocket messages appropriately
+- Cleans up disconnected sessions
+- Provides instance list via HTTP API
+
+## API Endpoints
+
+You can query active instances programmatically:
+
+```bash
+# List all instances
+curl http://127.0.0.1:19847/instances
+```
+
+Response format:
+
+```json
+{
+  "instances": [
+    {
+      "session_id": "abc123",
+      "state": "idle",
+      "tool_name": null,
+      "last_update": "2024-01-15T10:30:00Z"
+    }
+  ]
+}
+```
+
+## Best Practices
+
+<Step>
+<StepItem title="Use Descriptive Names">
+Set custom display names in the Property Inspector to identify sessions at a glance.
+</StepItem>
+<StepItem title="Group Related Sessions">
+Position related sessions near each other on your Stream Deck for logical grouping.
+</StepItem>
+<StepItem title="Monitor Session Health">
+Use the gray X icon to identify disconnected sessions that may need to be restarted.
+</StepItem>
+</Step>
+
+## Limitations
+
+- Each Stream Deck key monitors one session
+- Sessions must be started before they appear in the Property Inspector dropdown
+- The dropdown refreshes when the Property Inspector is opened
