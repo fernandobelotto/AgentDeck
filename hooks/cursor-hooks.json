@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "beforeMCPExecution": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "afterMCPExecution": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "beforeReadFile": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "beforeSubmitPrompt": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "afterAgentResponse": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "afterAgentThought": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ],
+    "stop": [
+      {
+        "command": "~/.agentdeck/hooks/cursor-status-reporter.sh"
+      }
+    ]
+  }
+}

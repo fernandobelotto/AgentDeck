@@ -436,7 +436,7 @@ function buildMatchString(match: KittyWindowMatch): string | null {
 /**
  * Agent type for window matching and launching
  */
-export type AgentType = "Claude" | "Gemini";
+export type AgentType = "Claude" | "Gemini" | "Cursor";
 
 /**
  * Find a Kitty window that matches a CLI agent instance
@@ -498,7 +498,8 @@ export async function findAgentWindow(
   }
 
   // Priority 3: Match by cmdline containing agent name (last resort)
-  const agentCmd = agentType.toLowerCase();
+  // For Cursor, the CLI command is "agent", not "cursor"
+  const agentCmd = agentType === "Cursor" ? "agent" : agentType.toLowerCase();
   const cmdlineMatch = allWindows.find(w =>
     w.cmdline.some(arg => arg.toLowerCase().includes(agentCmd))
   );
@@ -533,6 +534,17 @@ export async function findGeminiWindow(
   options?: KittyRemoteOptions
 ): Promise<KittyWindow | null> {
   return findAgentWindow("Gemini", sessionId, cwd, options);
+}
+
+/**
+ * Find a Kitty window that matches a Cursor Agent instance
+ */
+export async function findCursorWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<KittyWindow | null> {
+  return findAgentWindow("Cursor", sessionId, cwd, options);
 }
 
 /**
@@ -577,6 +589,17 @@ export async function focusGeminiWindow(
   options?: KittyRemoteOptions
 ): Promise<boolean> {
   return focusAgentWindow("Gemini", sessionId, cwd, options);
+}
+
+/**
+ * Focus the terminal window running Cursor Agent and scroll to bottom
+ */
+export async function focusCursorWindow(
+  sessionId?: string,
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<boolean> {
+  return focusAgentWindow("Cursor", sessionId, cwd, options);
 }
 
 /**
@@ -766,6 +789,49 @@ export async function launchGeminiWindow(
     }
     // Use interactive shell to ensure aliases are available
     args.push("--", shell, "-i", "-c", "gemini");
+
+    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+    await execAsync(cmd, { timeout: 5000 });
+    // Return -1 to indicate success via direct launch (no window ID available)
+    return -1;
+  } catch (error) {
+    lastLaunchError = `Both remote and direct launch failed. Remote: ${lastLaunchError}. Direct: ${error}`;
+    return null;
+  }
+}
+
+/**
+ * Launch a new Cursor Agent instance in Kitty
+ * First tries remote control, falls back to launching Kitty directly
+ */
+export async function launchCursorWindow(
+  cwd?: string,
+  options?: KittyRemoteOptions
+): Promise<number | null> {
+  lastLaunchError = null;
+  const socketPath = getKittySocketPath();
+
+  // Try remote control first (if Kitty is already running)
+  try {
+    const windowId = await launchWindow("agent", cwd, options);
+    if (windowId !== null) {
+      return windowId;
+    }
+    lastLaunchError = `Remote launch returned null, socket: ${socketPath}`;
+  } catch (err) {
+    lastLaunchError = `Remote launch failed: ${err}, socket: ${socketPath}`;
+  }
+
+  // Fallback: Launch Kitty directly if remote control failed
+  try {
+    const kittyBin = getKittyBinary("kitty");
+    const shell = process.env.SHELL || "/bin/zsh";
+    const args: string[] = [];
+    if (cwd) {
+      args.push("--directory", cwd);
+    }
+    // Use interactive shell to ensure aliases are available
+    args.push("--", shell, "-i", "-c", "agent");
 
     const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
     await execAsync(cmd, { timeout: 5000 });

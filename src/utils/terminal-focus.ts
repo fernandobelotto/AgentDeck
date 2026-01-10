@@ -14,6 +14,7 @@ import {
   sendAgentApproveSignal,
   launchClaudeWindow,
   launchGeminiWindow,
+  launchCursorWindow,
   isKittyAvailable,
   lastLaunchError,
   type AgentType
@@ -113,6 +114,29 @@ export async function openTerminalWithGemini(
 ): Promise<{ success: boolean; windowId: number | null; error?: string }> {
   try {
     const windowId = await launchGeminiWindow(workingDirectory);
+    if (windowId !== null) {
+      return { success: true, windowId };
+    }
+    // Include detailed error from lastLaunchError
+    const detailedError = lastLaunchError || "unknown error";
+    return { success: false, windowId: null, error: detailedError };
+  } catch (err) {
+    return { success: false, windowId: null, error: String(err) };
+  }
+}
+
+/**
+ * Open a new terminal with Cursor Agent CLI
+ * Launches a new Kitty window with the agent command
+ *
+ * @param workingDirectory - Optional directory to start in
+ * @returns Result object with success status and details
+ */
+export async function openTerminalWithCursor(
+  workingDirectory?: string
+): Promise<{ success: boolean; windowId: number | null; error?: string }> {
+  try {
+    const windowId = await launchCursorWindow(workingDirectory);
     if (windowId !== null) {
       return { success: true, windowId };
     }

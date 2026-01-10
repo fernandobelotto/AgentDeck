@@ -30,6 +30,15 @@ const GOOGLE = {
   gray: "#30302E",       // Same tertiary gray
 };
 
+// Cursor color palette (Cursor Agent)
+const CURSOR = {
+  black: "#141413",      // Same background for consistency
+  cream: "#FAF9F5",      // Same light text
+  purple: "#8B5CF6",     // Cursor Purple (brand color)
+  darkGray: "#1F1E1D",   // Same secondary dark
+  gray: "#30302E",       // Same tertiary gray
+};
+
 // Claude state configs
 const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   idle: {
@@ -200,9 +209,101 @@ const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
   }
 };
 
+// Cursor state configs - Cursor Purple themed
+const CURSOR_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
+  idle: {
+    primaryColor: CURSOR.purple,
+    secondaryColor: "#7C3AED",
+    glowColor: "#8B5CF640",
+    icon: "cursor",  // Cursor pointer icon
+    animationType: 'none',
+    animationFrames: 1,
+    label: "Ready"
+  },
+  running: {
+    primaryColor: "#A78BFA",
+    secondaryColor: "#8B5CF6",
+    glowColor: "#A78BFA50",
+    icon: "loader",
+    animationType: 'orbit',
+    animationFrames: 96,
+    label: "Running"
+  },
+  tool_use: {
+    primaryColor: CURSOR.purple,
+    secondaryColor: "#7C3AED",
+    glowColor: "#8B5CF650",
+    icon: "wrench",
+    animationType: 'ripple',
+    animationFrames: 72,
+    label: "Tool"
+  },
+  editing: {
+    primaryColor: "#C084FC",  // Lighter purple for editing
+    secondaryColor: "#A855F7",
+    glowColor: "#C084FC50",
+    icon: "pencil",
+    animationType: 'float',
+    animationFrames: 84,
+    label: "Edit"
+  },
+  question: {
+    primaryColor: CURSOR.cream,
+    secondaryColor: "#E8E7E3",
+    glowColor: "#FAF9F560",
+    icon: "help",
+    animationType: 'pulse',
+    animationFrames: 48,
+    label: "Input"
+  },
+  plan_prompt: {
+    primaryColor: "#22D3EE",     // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    animationType: 'pulse',
+    animationFrames: 48,
+    label: "Plan?"
+  },
+  permission: {
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+    glowColor: "#F8717170",
+    icon: "shield",
+    animationType: 'wave',
+    animationFrames: 60,
+    label: "Approve?"
+  },
+  error: {
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+    glowColor: "#F8717140",
+    icon: "alert",
+    animationType: 'shake',
+    animationFrames: 24,
+    label: "Error"
+  },
+  disconnected: {
+    primaryColor: CURSOR.gray,
+    secondaryColor: CURSOR.darkGray,
+    glowColor: "#30302E30",
+    icon: "unplug",
+    animationType: 'none',
+    animationFrames: 1,
+    label: "Offline"
+  }
+};
+
 // Helper to get state config based on source
 function getStateConfigs(source: InstanceSource = "claude"): Record<ClaudeState, StateConfig> {
-  return source === "gemini" ? GEMINI_STATE_CONFIGS : CLAUDE_STATE_CONFIGS;
+  switch (source) {
+    case "gemini":
+      return GEMINI_STATE_CONFIGS;
+    case "cursor":
+      return CURSOR_STATE_CONFIGS;
+    default:
+      return CLAUDE_STATE_CONFIGS;
+  }
 }
 
 // Legacy alias for backward compatibility
@@ -213,6 +314,12 @@ const LUCIDE_ICONS: Record<string, string> = {
   // Gemini sparkle icon - four-pointed star
   gemini: `
     <path d="M12 2L14.09 8.26L20 12L14.09 15.74L12 22L9.91 15.74L4 12L9.91 8.26L12 2Z"
+          transform="scale(2.4) translate(-12, -12)"
+          fill="currentColor"/>`,
+
+  // Cursor logo - official hexagonal icon from lobe-icons
+  cursor: `
+    <path d="M22.106 5.68L12.5.135a.998.998 0 00-.998 0L1.893 5.68a.84.84 0 00-.419.726v11.186c0 .3.16.577.42.727l9.607 5.547a.999.999 0 00.998 0l9.608-5.547a.84.84 0 00.42-.727V6.407a.84.84 0 00-.42-.726zm-.603 1.176L12.228 22.92c-.063.108-.228.064-.228-.061V12.34a.59.59 0 00-.295-.51l-9.11-5.26c-.107-.062-.063-.228.062-.228h18.55c.264 0 .428.286.296.514z"
           transform="scale(2.4) translate(-12, -12)"
           fill="currentColor"/>`,
 

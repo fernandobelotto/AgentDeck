@@ -28,6 +28,19 @@
           "Image": "imgs/gemini-action"
         }
       ]
+    },
+    {
+      "Name": "Cursor Instance",
+      "UUID": "com.agentdeck.plugin.cursor-instance",
+      "Icon": "imgs/cursor-action",
+      "Tooltip": "Monitor and control a Cursor Agent instance",
+      "PropertyInspectorPath": "ui/cursor-instance.html",
+      "SupportedInMultiActions": false,
+      "States": [
+        {
+          "Image": "imgs/cursor-action"
+        }
+      ]
     }
   ],
   "Category": "AgentDeck",

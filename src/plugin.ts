@@ -2,6 +2,7 @@ import streamDeck, { LogLevel } from "@elgato/streamdeck";
 
 import { ClaudeInstanceAction } from "./actions/claude-instance-action.js";
 import { GeminiInstanceAction } from "./actions/gemini-instance-action.js";
+import { CursorInstanceAction } from "./actions/cursor-instance-action.js";
 import { getStatusServer } from "./server/status-server.js";
 
 // Set up logging
@@ -20,6 +21,9 @@ streamDeck.actions.registerAction(new ClaudeInstanceAction());
 
 // Register the Gemini Instance action
 streamDeck.actions.registerAction(new GeminiInstanceAction());
+
+// Register the Cursor Instance action
+streamDeck.actions.registerAction(new CursorInstanceAction());
 
 // Connect to Stream Deck
 streamDeck.connect();

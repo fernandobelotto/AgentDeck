@@ -1,7 +1,7 @@
 /**
  * Source of the AI agent instance (which CLI tool)
  */
-export type InstanceSource = "claude" | "gemini";
+export type InstanceSource = "claude" | "gemini" | "cursor";
 
 /**
  * Claude Code instance states that can be visualized on the Stream Deck
@@ -123,6 +123,19 @@ export interface ClaudeInstanceSettings {
  * Uses index signature compatible with JsonObject
  */
 export interface GeminiInstanceSettings {
+  sessionId?: string;
+  instanceName?: string;
+  autoAssign?: boolean;
+  projectFolder?: string;
+  displayMode?: DisplayMode;
+  [key: string]: string | boolean | number | null | undefined;
+}
+
+/**
+ * Settings stored for each Cursor Agent Stream Deck action instance
+ * Uses index signature compatible with JsonObject
+ */
+export interface CursorInstanceSettings {
   sessionId?: string;
   instanceName?: string;
   autoAssign?: boolean;
