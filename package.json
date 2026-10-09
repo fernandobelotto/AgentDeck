@@ -1,6 +1,7 @@
 {
   "name": "agentdeck",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.34.5",
   "description": "Stream Deck plugin to monitor and control AI agent instances",
   "main": "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
   "type": "module",

@@ -22,12 +22,12 @@ The project is a TypeScript monorepo consisting of three main parts:
 
 1.  **Install dependencies**:
     ```bash
-    npm install
+    pnpm install
     ```
 
 2.  **Build the plugin**:
     ```bash
-    npm run build
+    pnpm build
     ```
     This command uses Rollup to bundle the TypeScript source code into a single JavaScript file located at `com.agentdeck.plugin.sdPlugin/bin/plugin.js`.
 
@@ -35,13 +35,13 @@ The project is a TypeScript monorepo consisting of three main parts:
 
 1.  **Link the plugin to the Stream Deck software**:
     ```bash
-    npm run link
+    pnpm run link
     ```
     This command creates a symbolic link from the project's plugin directory to the Stream Deck's plugin directory.
 
 2.  **Run in watch mode (for development)**:
     ```bash
-    npm run watch
+    pnpm watch
     ```
     This will automatically rebuild the plugin when files are changed.
 

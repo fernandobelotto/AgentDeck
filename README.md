@@ -72,13 +72,13 @@ After changing the config, **restart Kitty** for the settings to take effect.
 
 ```bash
 cd AgentDeck
-npm install
+pnpm install
 ```
 
 ### 2. Build the Plugin
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ### 3. Link the Plugin to Stream Deck
@@ -247,10 +247,10 @@ Claude Code ──(hooks)──> Status Server ──(WebSocket)──> Stream D
 
 ```bash
 # Watch mode (auto-rebuild)
-npm run watch
+pnpm watch
 
 # One-time build
-npm run build
+pnpm build
 ```
 
 ## Troubleshooting

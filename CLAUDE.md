@@ -5,10 +5,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Build Commands
 
 ```bash
-npm install          # Install dependencies
-npm run build        # Build plugin with Rollup
-npm run watch        # Watch mode with auto-rebuild
-npm run preview      # Open icon preview tool in browser
+pnpm install         # Install dependencies
+pnpm build           # Build plugin with Rollup
+pnpm watch           # Watch mode with auto-rebuild
+pnpm preview         # Open icon preview tool in browser
 ```
 
 Stream Deck CLI commands:

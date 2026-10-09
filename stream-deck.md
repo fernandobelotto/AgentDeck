@@ -60,8 +60,8 @@ After creating a plugin with `streamdeck create` you'll be provided with a local
 
 The `package.json` provides two scripts for building the plugin.
 
-- `npm run build` - builds the plugin.
-- `npm run watch` - continuously watches for changes, and hot-reloads the plugin after build.
+- `pnpm build` - builds the plugin.
+- `pnpm watch` - continuously watches for changes, and hot-reloads the plugin after build.
 
 ## 🎛️ Actions
 
