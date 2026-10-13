@@ -1,45 +1,54 @@
-import type { ClaudeInstance, ClaudeState, StatusUpdate, StatusMetadata, InstanceSource } from "./types.js";
+import type {
+  ClaudeInstance,
+  ClaudeState,
+  StatusUpdate,
+  StatusMetadata,
+  InstanceSource,
+} from "./types.js";
 
 /**
  * Manages tracking of Claude Code instances and their states
  */
 export class InstanceManager {
-  private instances: Map<string, ClaudeInstance> = new Map();
+  private instances = new Map<string, ClaudeInstance>();
   private readonly TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes timeout
   private cleanupInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     // Periodically clean up stale instances
-    this.cleanupInterval = setInterval(() => this.cleanupStaleInstances(), 60000);
+    this.cleanupInterval = setInterval(
+      () => this.cleanupStaleInstances(),
+      60_000
+    );
   }
 
   /**
    * States that require user action and should not be overwritten by idle/running states
    * These are "sticky" states that persist until explicitly cleared by user action
    */
-  private static readonly STICKY_STATES: Set<ClaudeState> = new Set([
+  private static readonly STICKY_STATES = new Set<ClaudeState>([
     "permission",
-    "question"
+    "question",
   ]);
 
   /**
    * States that should NOT override sticky states
    * These typically fire when Claude finishes output but user hasn't responded yet
    */
-  private static readonly NON_OVERRIDING_STATES: Set<ClaudeState> = new Set([
+  private static readonly NON_OVERRIDING_STATES = new Set<ClaudeState>([
     "idle",
-    "running"
+    "running",
   ]);
 
   /**
    * Hook events that indicate actual progress and should clear sticky states
    * These mean Claude has moved on past the permission/question state
    */
-  private static readonly PROGRESS_HOOK_EVENTS: Set<string> = new Set([
-    "PreToolUse",    // Claude is starting a new tool (after approval)
-    "PostToolUse",   // A tool finished executing
-    "Stop",          // Claude finished processing
-    "SessionEnd"     // Session ended
+  private static readonly PROGRESS_HOOK_EVENTS = new Set<string>([
+    "PreToolUse", // Claude is starting a new tool (after approval)
+    "PostToolUse", // A tool finished executing
+    "Stop", // Claude finished processing
+    "SessionEnd", // Session ended
   ]);
 
   /**
@@ -54,8 +63,12 @@ export class InstanceManager {
     let effectiveState = update.state;
     if (existing) {
       const currentIsSticky = InstanceManager.STICKY_STATES.has(existing.state);
-      const newIsNonOverriding = InstanceManager.NON_OVERRIDING_STATES.has(update.state);
-      const isProgressEvent = InstanceManager.PROGRESS_HOOK_EVENTS.has(update.hook_event);
+      const newIsNonOverriding = InstanceManager.NON_OVERRIDING_STATES.has(
+        update.state
+      );
+      const isProgressEvent = InstanceManager.PROGRESS_HOOK_EVENTS.has(
+        update.hook_event
+      );
 
       if (currentIsSticky && newIsNonOverriding && !isProgressEvent) {
         // Keep the sticky state, but still update metadata and timestamp
@@ -70,7 +83,7 @@ export class InstanceManager {
       metadata: update.metadata,
       lastUpdate: Date.now(),
       name: existing?.name,
-      source: update.source ?? "claude" // default to claude for backward compatibility
+      source: update.source ?? "claude", // default to claude for backward compatibility
     };
 
     this.instances.set(update.session_id, instance);
@@ -82,7 +95,7 @@ export class InstanceManager {
         if (current?.state === "disconnected") {
           this.instances.delete(update.session_id);
         }
-      }, 10000); // 10 seconds grace period
+      }, 10_000); // 10 seconds grace period
     }
 
     return instance;
@@ -92,7 +105,7 @@ export class InstanceManager {
    * Get all tracked instances
    */
   getAllInstances(): ClaudeInstance[] {
-    return Array.from(this.instances.values());
+    return [...this.instances.values()];
   }
 
   /**
@@ -137,21 +150,21 @@ export class InstanceManager {
    * Get available (unassigned) instances
    */
   getAvailableInstances(): ClaudeInstance[] {
-    return this.getAllInstances().filter(i => i.state !== "disconnected");
+    return this.getAllInstances().filter((i) => i.state !== "disconnected");
   }
 
   /**
    * Get instances filtered by source (claude or gemini)
    */
   getInstancesBySource(source: InstanceSource): ClaudeInstance[] {
-    return this.getAllInstances().filter(i => i.source === source);
+    return this.getAllInstances().filter((i) => i.source === source);
   }
 
   /**
    * Get available instances filtered by source
    */
   getAvailableInstancesBySource(source: InstanceSource): ClaudeInstance[] {
-    return this.getAvailableInstances().filter(i => i.source === source);
+    return this.getAvailableInstances().filter((i) => i.source === source);
   }
 
   /**
@@ -174,7 +187,7 @@ export class InstanceManager {
    * @param thresholdMs - Time threshold in ms (default 30 seconds)
    * @returns Number of instances removed
    */
-  forceCleanupStale(thresholdMs: number = 30000): number {
+  forceCleanupStale(thresholdMs: number = 30_000): number {
     const now = Date.now();
     let removed = 0;
     for (const [sessionId, instance] of this.instances) {
@@ -198,14 +211,16 @@ export class InstanceManager {
     // Find the most recent instance for each CWD
     for (const [sessionId, instance] of this.instances) {
       const cwd = instance.metadata?.cwd;
-      if (!cwd) continue;
+      if (!cwd) {
+        continue;
+      }
 
       const existing = byCwd.get(cwd);
       if (!existing || instance.lastUpdate > existing.lastUpdate) {
         if (existing) {
           toRemove.push(existing.sessionId);
         }
-        byCwd.set(cwd, { sessionId, lastUpdate: instance.lastUpdate });
+        byCwd.set(cwd, { lastUpdate: instance.lastUpdate, sessionId });
       } else {
         toRemove.push(sessionId);
       }

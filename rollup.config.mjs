@@ -1,14 +1,30 @@
+import commonjs from "@rollup/plugin-commonjs";
 import nodeResolve from "@rollup/plugin-node-resolve";
 import typescript from "@rollup/plugin-typescript";
-import commonjs from "@rollup/plugin-commonjs";
 
 export default {
+  external: [
+    "http",
+    "https",
+    "net",
+    "tls",
+    "url",
+    "stream",
+    "crypto",
+    "buffer",
+    "events",
+    "util",
+    "child_process",
+    "os",
+    "path",
+    "fs",
+  ],
   input: "src/plugin.ts",
   output: {
     file: "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
     format: "cjs",
+    inlineDynamicImports: true,
     sourcemap: true,
-    inlineDynamicImports: true
   },
   plugins: [
     typescript({
@@ -17,13 +33,12 @@ export default {
         declaration: false,
         declarationMap: false,
         module: "ESNext",
-        moduleResolution: "bundler"
-      }
+        moduleResolution: "bundler",
+      },
     }),
     nodeResolve({
-      preferBuiltins: true
+      preferBuiltins: true,
     }),
-    commonjs()
+    commonjs(),
   ],
-  external: ["http", "https", "net", "tls", "url", "stream", "crypto", "buffer", "events", "util", "child_process", "os", "path", "fs"]
 };

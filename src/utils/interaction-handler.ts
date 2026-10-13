@@ -13,15 +13,15 @@ export function setInteractionLogger(fn: (message: string) => void): void {
 export enum InteractionType {
   SinglePress = "single",
   DoublePress = "double",
-  Hold = "hold"
+  Hold = "hold",
 }
 
 export interface InteractionCallbacks {
   onSinglePress: () => void;
   onDoublePress: () => void;
   onHold: () => void;
-  onHoldProgress?: (progress: number) => void;  // 0-1 progress during hold
-  onHoldCancel?: () => void;  // Called when hold is cancelled (key released early)
+  onHoldProgress?: (progress: number) => void; // 0-1 progress during hold
+  onHoldCancel?: () => void; // Called when hold is cancelled (key released early)
 }
 
 export class InteractionHandler {
@@ -76,18 +76,23 @@ export class InteractionHandler {
     this.lastKeyDownTime = now;
 
     // Start hold detection timer
-    logFn(`[KeyDown] Starting hold timer (${InteractionHandler.HOLD_THRESHOLD_MS}ms)`);
+    logFn(
+      `[KeyDown] Starting hold timer (${InteractionHandler.HOLD_THRESHOLD_MS}ms)`
+    );
 
     // Start hold progress reporting if callback is provided
     if (this.callbacks.onHoldProgress) {
       const holdStartTime = Date.now();
-      this.callbacks.onHoldProgress(0);  // Initial progress
+      this.callbacks.onHoldProgress(0); // Initial progress
 
       this.holdProgressInterval = setInterval(() => {
         const elapsed = Date.now() - holdStartTime;
-        const progress = Math.min(1, elapsed / InteractionHandler.HOLD_THRESHOLD_MS);
+        const progress = Math.min(
+          1,
+          elapsed / InteractionHandler.HOLD_THRESHOLD_MS
+        );
         this.callbacks.onHoldProgress!(progress);
-      }, 50);  // Update every 50ms for smooth ring animation
+      }, 50); // Update every 50ms for smooth ring animation
     }
 
     this.holdTimeout = setTimeout(() => {
@@ -114,7 +119,9 @@ export class InteractionHandler {
   handleKeyUp(): void {
     const pressDuration = Date.now() - this.keyDownTime;
 
-    logFn(`[KeyUp] pressDuration=${pressDuration}ms, clickCount=${this.clickCount}, holdTriggered=${this.holdTriggered}`);
+    logFn(
+      `[KeyUp] pressDuration=${pressDuration}ms, clickCount=${this.clickCount}, holdTriggered=${this.holdTriggered}`
+    );
 
     // Clear hold progress interval
     if (this.holdProgressInterval) {

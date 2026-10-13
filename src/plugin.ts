@@ -1,8 +1,8 @@
 import streamDeck, { LogLevel } from "@elgato/streamdeck";
 
 import { ClaudeInstanceAction } from "./actions/claude-instance-action.js";
-import { GeminiInstanceAction } from "./actions/gemini-instance-action.js";
 import { CursorInstanceAction } from "./actions/cursor-instance-action.js";
+import { GeminiInstanceAction } from "./actions/gemini-instance-action.js";
 import { getStatusServer } from "./server/status-server.js";
 
 // Set up logging
@@ -10,11 +10,14 @@ streamDeck.logger.setLevel(LogLevel.DEBUG);
 
 // Start the status server
 const statusServer = getStatusServer();
-statusServer.start().then(() => {
-  streamDeck.logger.info("AgentDeck status server started");
-}).catch((err) => {
-  streamDeck.logger.error("Failed to start status server:", err);
-});
+statusServer
+  .start()
+  .then(() => {
+    streamDeck.logger.info("AgentDeck status server started");
+  })
+  .catch((error) => {
+    streamDeck.logger.error("Failed to start status server:", error);
+  });
 
 // Register the Claude Instance action
 streamDeck.actions.registerAction(new ClaudeInstanceAction());

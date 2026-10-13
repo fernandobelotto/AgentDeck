@@ -1,10 +1,17 @@
 import http from "node:http";
+
 import { WebSocketServer, WebSocket } from "ws";
-import { InstanceManager } from "./instance-manager.js";
-import { UsageTracker } from "./usage-tracker.js";
-import { GeminiUsageTracker } from "./gemini-usage-tracker.js";
-import { isKittyAvailable, getKittySocketPath, findWorkingSocket, getSocketCandidates, clearSocketCache } from "../utils/kitty-remote.js";
+
 import { pickFolder } from "../utils/folder-picker.js";
+import {
+  isKittyAvailable,
+  getKittySocketPath,
+  findWorkingSocket,
+  getSocketCandidates,
+  clearSocketCache,
+} from "../utils/kitty-remote.js";
+import { GeminiUsageTracker } from "./gemini-usage-tracker.js";
+import { InstanceManager } from "./instance-manager.js";
 import type {
   StatusUpdate,
   WebSocketMessage,
@@ -12,10 +19,11 @@ import type {
   ClaudeState,
   CommandType,
   UsageStats,
-  InstanceSource
+  InstanceSource,
 } from "./types.js";
+import { UsageTracker } from "./usage-tracker.js";
 
-const STATUS_PORT = 19847;
+const STATUS_PORT = 19_847;
 
 export type StatusChangeCallback = (
   sessionId: string,
@@ -35,11 +43,11 @@ export class StatusServer {
   private instanceManager: InstanceManager;
   private usageTracker: UsageTracker;
   private geminiUsageTracker: GeminiUsageTracker;
-  private clients: Set<WebSocket> = new Set();
-  private statusChangeCallbacks: Set<StatusChangeCallback> = new Set();
+  private clients = new Set<WebSocket>();
+  private statusChangeCallbacks = new Set<StatusChangeCallback>();
   private isRunning = false;
-  private trackedSessions: Set<string> = new Set();
-  private trackedGeminiSessions: Set<string> = new Set();
+  private trackedSessions = new Set<string>();
+  private trackedGeminiSessions = new Set<string>();
 
   constructor() {
     this.instanceManager = new InstanceManager();
@@ -52,9 +60,12 @@ export class StatusServer {
     });
 
     // Listen for Gemini usage updates
-    this.geminiUsageTracker.on("update", (sessionId: string, usage: UsageStats) => {
-      this.broadcastUsageUpdate(sessionId, usage, "gemini");
-    });
+    this.geminiUsageTracker.on(
+      "update",
+      (sessionId: string, usage: UsageStats) => {
+        this.broadcastUsageUpdate(sessionId, usage, "gemini");
+      }
+    );
 
     // HTTP server for receiving hook POST requests
     this.httpServer = http.createServer((req, res) => {
@@ -71,11 +82,19 @@ export class StatusServer {
 
       if (req.method === "POST" && req.url === "/status") {
         this.handleStatusPost(req, res);
-      } else if (req.method === "GET" && (req.url === "/instances" || req.url?.startsWith("/instances?"))) {
+      } else if (
+        req.method === "GET" &&
+        (req.url === "/instances" || req.url?.startsWith("/instances?"))
+      ) {
         this.handleGetInstances(req, res);
       } else if (req.method === "GET" && req.url === "/health") {
         res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ status: "ok", instances: this.instanceManager.getAllInstances().length }));
+        res.end(
+          JSON.stringify({
+            instances: this.instanceManager.getAllInstances().length,
+            status: "ok",
+          })
+        );
       } else if (req.method === "GET" && req.url === "/kitty-status") {
         this.handleKittyStatus(res);
       } else if (req.method === "POST" && req.url === "/pick-folder") {
@@ -96,7 +115,10 @@ export class StatusServer {
     });
   }
 
-  private handleStatusPost(req: http.IncomingMessage, res: http.ServerResponse): void {
+  private handleStatusPost(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): void {
     let body = "";
 
     req.on("data", (chunk) => {
@@ -116,7 +138,7 @@ export class StatusServer {
         this.handleStatusUpdate(update);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ success: true }));
-      } catch (e) {
+      } catch {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Invalid JSON" }));
       }
@@ -128,7 +150,10 @@ export class StatusServer {
     });
   }
 
-  private handleGetInstances(req: http.IncomingMessage, res: http.ServerResponse): void {
+  private handleGetInstances(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): void {
     // Parse query parameters
     const url = new URL(req.url || "/instances", "http://127.0.0.1");
     const cleanup = url.searchParams.get("cleanup") === "true";
@@ -137,7 +162,7 @@ export class StatusServer {
 
     // Run cleanup if requested (removes instances inactive for 30+ seconds)
     if (cleanup) {
-      this.instanceManager.forceCleanupStale(30000);
+      this.instanceManager.forceCleanupStale(30_000);
     }
 
     // Deduplicate by CWD if requested (keeps only the most recent per folder)
@@ -164,11 +189,13 @@ export class StatusServer {
       const candidates = getSocketCandidates();
 
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({
-        available: workingSocket !== null,
-        socketPath: workingSocket || getKittySocketPath(),
-        candidates
-      }));
+      res.end(
+        JSON.stringify({
+          available: workingSocket !== null,
+          candidates,
+          socketPath: workingSocket || getKittySocketPath(),
+        })
+      );
     } catch (error) {
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ available: false, error: String(error) }));
@@ -180,17 +207,20 @@ export class StatusServer {
       const folderPath = await pickFolder();
       res.writeHead(200, { "Content-Type": "application/json" });
       if (folderPath) {
-        res.end(JSON.stringify({ success: true, path: folderPath }));
+        res.end(JSON.stringify({ path: folderPath, success: true }));
       } else {
-        res.end(JSON.stringify({ success: false, cancelled: true }));
+        res.end(JSON.stringify({ cancelled: true, success: false }));
       }
     } catch (error) {
       res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: false, error: String(error) }));
+      res.end(JSON.stringify({ error: String(error), success: false }));
     }
   }
 
-  private handleGetUsage(req: http.IncomingMessage, res: http.ServerResponse): void {
+  private handleGetUsage(
+    req: http.IncomingMessage,
+    res: http.ServerResponse
+  ): void {
     const url = new URL(req.url || "/usage/", "http://127.0.0.1");
     const pathParts = url.pathname.split("/").filter(Boolean);
     const sessionId = pathParts[1] || "";
@@ -210,7 +240,9 @@ export class StatusServer {
       usage = this.usageTracker.getUsage(sessionId);
     } else {
       // Try both if source not specified
-      usage = this.usageTracker.getUsage(sessionId) || this.geminiUsageTracker.getUsage(sessionId);
+      usage =
+        this.usageTracker.getUsage(sessionId) ||
+        this.geminiUsageTracker.getUsage(sessionId);
     }
 
     if (usage) {
@@ -222,12 +254,16 @@ export class StatusServer {
     }
   }
 
-  private broadcastUsageUpdate(sessionId: string, usage: UsageStats, source: InstanceSource = "claude"): void {
+  private broadcastUsageUpdate(
+    sessionId: string,
+    usage: UsageStats,
+    source: InstanceSource = "claude"
+  ): void {
     const message: WebSocketMessage = {
-      type: "usage_update",
       sessionId,
+      source,
+      type: "usage_update",
       usage,
-      source
     };
     this.broadcastToClients(message);
   }
@@ -237,8 +273,8 @@ export class StatusServer {
 
     // Send current state of all instances on connect
     const initMessage: WebSocketMessage = {
+      instances: this.instanceManager.getAllInstances(),
       type: "init",
-      instances: this.instanceManager.getAllInstances()
     };
     ws.send(JSON.stringify(initMessage));
 
@@ -248,7 +284,7 @@ export class StatusServer {
         if (message.type === "command") {
           this.handleCommand(ws, message);
         }
-      } catch (e) {
+      } catch {
         // Ignore invalid messages
       }
     });
@@ -271,20 +307,26 @@ export class StatusServer {
       if (source === "claude" && !this.trackedSessions.has(update.session_id)) {
         this.trackedSessions.add(update.session_id);
         this.usageTracker.startTracking(update.session_id, update.metadata.cwd);
-      } else if (source === "gemini" && !this.trackedGeminiSessions.has(update.session_id)) {
+      } else if (
+        source === "gemini" &&
+        !this.trackedGeminiSessions.has(update.session_id)
+      ) {
         this.trackedGeminiSessions.add(update.session_id);
-        this.geminiUsageTracker.startTracking(update.session_id, update.metadata.cwd);
+        this.geminiUsageTracker.startTracking(
+          update.session_id,
+          update.metadata.cwd
+        );
       }
     }
 
     // Broadcast the effective state to all connected clients
     // The instance manager may have kept a sticky state instead of the incoming state
     const message: WebSocketMessage = {
-      type: "update",
-      sessionId: update.session_id,
-      state: instance.state,
       metadata: update.metadata,
-      source: instance.source
+      sessionId: update.session_id,
+      source: instance.source,
+      state: instance.state,
+      type: "update",
     };
 
     this.broadcastToClients(message);
@@ -293,7 +335,7 @@ export class StatusServer {
     this.statusChangeCallbacks.forEach((callback) => {
       try {
         callback(update.session_id, instance.state, update.metadata);
-      } catch (e) {
+      } catch {
         // Ignore callback errors
       }
     });
@@ -305,10 +347,10 @@ export class StatusServer {
     // For now, we'll just acknowledge the command
     // The actual implementation would depend on how we communicate with Claude Code
     const response: WebSocketMessage = {
-      type: "command_response",
-      sessionId,
       command,
-      success: true
+      sessionId,
+      success: true,
+      type: "command_response",
     };
 
     ws.send(JSON.stringify(response));
@@ -355,13 +397,17 @@ export class StatusServer {
 
       this.httpServer.listen(STATUS_PORT, "127.0.0.1", () => {
         this.isRunning = true;
-        console.log(`AgentDeck status server running on http://127.0.0.1:${STATUS_PORT}`);
+        console.log(
+          `AgentDeck status server running on http://127.0.0.1:${STATUS_PORT}`
+        );
         resolve();
       });
 
       this.httpServer.on("error", (err: NodeJS.ErrnoException) => {
         if (err.code === "EADDRINUSE") {
-          console.log(`Port ${STATUS_PORT} already in use, assuming server is already running`);
+          console.log(
+            `Port ${STATUS_PORT} already in use, assuming server is already running`
+          );
           this.isRunning = true;
           resolve();
         } else {

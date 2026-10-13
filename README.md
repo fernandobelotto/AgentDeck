@@ -43,16 +43,19 @@ After changing the config, **restart Kitty** for the settings to take effect.
 ### Troubleshooting Kitty Integration
 
 **"Remote Control Not Available" in Property Inspector**
+
 - Ensure `allow_remote_control yes` is in your `kitty.conf`
 - Restart Kitty after changing the config
 - Verify the socket exists: `ls /tmp/kitty*`
 
 **Button press doesn't open new Claude window**
+
 - Test remote control manually: `kitten @ ls`
 - Check plugin logs in `com.agentdeck.plugin.sdPlugin/logs/`
 - Verify Kitty is installed at `/Applications/kitty.app` (macOS)
 
 **Claude command not found when launching**
+
 - The `claude` command may be an alias in your shell config
 - AgentDeck launches with `-i` flag to load interactive shell config (`.zshrc`)
 - Ensure your Claude alias is defined in `~/.zshrc` (not just `~/.zprofile`)
@@ -88,6 +91,7 @@ streamdeck link com.agentdeck.plugin.sdPlugin
 ```
 
 Or manually copy the `com.agentdeck.plugin.sdPlugin` folder to:
+
 - **macOS**: `~/Library/Application Support/com.elgato.StreamDeck/Plugins/`
 - **Windows**: `%appdata%\Elgato\StreamDeck\Plugins\`
 
@@ -213,24 +217,24 @@ Restart any running Claude Code instances to pick up the new hook configuration.
 
 ### Status Icons
 
-| Icon | State | Description |
-|------|-------|-------------|
-| Green checkmark | Idle | Claude Code is ready for input |
-| Blue spinner | Running | Processing a request |
-| Orange gear | Tool Use | Executing a tool (Bash, Read, etc.) |
-| Purple pencil | Editing | Modifying files |
-| Cyan ? | Question | Waiting for user input |
-| Red shield | Permission | Pending permission approval |
-| Red ! | Error | An error occurred |
-| Gray X | Disconnected | Session not connected |
+| Icon            | State        | Description                         |
+| --------------- | ------------ | ----------------------------------- |
+| Green checkmark | Idle         | Claude Code is ready for input      |
+| Blue spinner    | Running      | Processing a request                |
+| Orange gear     | Tool Use     | Executing a tool (Bash, Read, etc.) |
+| Purple pencil   | Editing      | Modifying files                     |
+| Cyan ?          | Question     | Waiting for user input              |
+| Red shield      | Permission   | Pending permission approval         |
+| Red !           | Error        | An error occurred                   |
+| Gray X          | Disconnected | Session not connected               |
 
 ### Gesture Controls
 
-| Gesture | Threshold | Action |
-|---------|-----------|--------|
-| Single Press | - | Focus the terminal window |
-| Double Press | 300ms | Cancel current operation |
-| Hold | 500ms | Approve pending permission |
+| Gesture      | Threshold | Action                     |
+| ------------ | --------- | -------------------------- |
+| Single Press | -         | Focus the terminal window  |
+| Double Press | 300ms     | Cancel current operation   |
+| Hold         | 500ms     | Approve pending permission |
 
 ## Architecture
 
@@ -256,17 +260,20 @@ pnpm build
 ## Troubleshooting
 
 ### Plugin not showing in Stream Deck
+
 1. Ensure the plugin is in the correct Plugins directory
 2. Restart the Stream Deck application
 3. Check plugin logs in `com.agentdeck.plugin.sdPlugin/logs/`
 
 ### Status not updating
+
 1. Verify hooks are configured in `~/.claude/settings.json`
 2. Check that `jq` and `curl` are installed
 3. Test the hook script: `echo '{"session_id":"test","hook_event_name":"Stop"}' | ~/.agentdeck/hooks/status-reporter.sh`
 4. Check server is running: `curl http://127.0.0.1:19847/health`
 
 ### Server port already in use
+
 If port 19847 is in use, the plugin will assume the server is already running. Kill any existing processes on that port.
 
 ## License

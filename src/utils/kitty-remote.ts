@@ -1,13 +1,13 @@
 import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { readdirSync, statSync, existsSync } from "node:fs";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
 // Full paths to Kitty binaries (macOS app bundle)
 const KITTY_PATHS = {
+  kitten: "/Applications/kitty.app/Contents/MacOS/kitten",
   kitty: "/Applications/kitty.app/Contents/MacOS/kitty",
-  kitten: "/Applications/kitty.app/Contents/MacOS/kitten"
 };
 
 /**
@@ -98,9 +98,9 @@ function findKittySocketCandidates(): string[] {
     // Look for /tmp/kitty-* sockets (PID-suffixed)
     const files = readdirSync("/tmp");
     const kittySockets = files
-      .filter(f => f.startsWith("kitty-"))
-      .map(f => `/tmp/${f}`)
-      .filter(path => {
+      .filter((f) => f.startsWith("kitty-"))
+      .map((f) => `/tmp/${f}`)
+      .filter((path) => {
         try {
           return statSync(path).isSocket();
         } catch {
@@ -117,7 +117,7 @@ function findKittySocketCandidates(): string[] {
       }
     });
 
-    candidates.push(...kittySockets.map(s => `unix:${s}`));
+    candidates.push(...kittySockets.map((s) => `unix:${s}`));
   } catch {
     // Ignore errors
   }
@@ -174,7 +174,10 @@ export async function findWorkingSocket(): Promise<string | null> {
   if (process.env.KITTY_LISTEN_ON) {
     const envSocket = process.env.KITTY_LISTEN_ON;
     try {
-      await execKittenCommand("ls", [], { socketPath: envSocket, timeout: 2000 });
+      await execKittenCommand("ls", [], {
+        socketPath: envSocket,
+        timeout: 2000,
+      });
       cachedSocketPath = envSocket;
       return envSocket;
     } catch {
@@ -214,7 +217,7 @@ async function execKittenCommand(
 
   const kittenBin = getKittyBinary("kitten");
   const fullArgs = ["@", "--to", socketPath, command, ...args];
-  const cmd = `"${kittenBin}" ${fullArgs.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+  const cmd = `"${kittenBin}" ${fullArgs.map((arg) => `"${arg.replaceAll('"', '\\"')}"`).join(" ")}`;
 
   try {
     const { stdout } = await execAsync(cmd, { timeout });
@@ -222,9 +225,11 @@ async function execKittenCommand(
   } catch (error: unknown) {
     const err = error as { code?: string; message?: string };
     if (err.code === "ETIMEDOUT") {
-      throw new Error(`Kitty command timed out: ${command}`);
+      throw new Error(`Kitty command timed out: ${command}`, { cause: error });
     }
-    throw new Error(`Kitty command failed: ${command} - ${err.message || error}`);
+    throw new Error(
+      `Kitty command failed: ${command} - ${err.message || error}`
+    );
   }
 }
 
@@ -235,7 +240,9 @@ async function execKittenCommand(
 /**
  * Check if Kitty remote control is available
  */
-export async function isKittyAvailable(options?: KittyRemoteOptions): Promise<boolean> {
+export async function isKittyAvailable(
+  options?: KittyRemoteOptions
+): Promise<boolean> {
   try {
     await execKittenCommand("ls", [], { ...options, timeout: 2000 });
     return true;
@@ -248,7 +255,9 @@ export async function isKittyAvailable(options?: KittyRemoteOptions): Promise<bo
  * List all Kitty windows with their metadata
  * Uses: kitten @ --to <socket> ls
  */
-export async function listWindows(options?: KittyRemoteOptions): Promise<KittyLsResponse> {
+export async function listWindows(
+  options?: KittyRemoteOptions
+): Promise<KittyLsResponse> {
   const output = await execKittenCommand("ls", [], options);
   try {
     return JSON.parse(output) as KittyLsResponse;
@@ -387,7 +396,7 @@ export async function launchWindow(
   try {
     const output = await execKittenCommand("launch", args, options);
     // The launch command returns the window ID
-    const windowId = parseInt(output, 10);
+    const windowId = Number.parseInt(output, 10);
     return isNaN(windowId) ? null : windowId;
   } catch {
     return null;
@@ -476,8 +485,8 @@ export async function findAgentWindow(
   // Priority 1: Match by title containing "[Agent]:[sessionId]" (most reliable)
   // The hooks set window titles with format "[Agent]:[session]:project - state"
   if (sessionId) {
-    const shortSession = sessionId.substring(0, 8);
-    const titleMatch = allWindows.find(w =>
+    const shortSession = sessionId.slice(0, 8);
+    const titleMatch = allWindows.find((w) =>
       w.title.includes(`${agentType}:${shortSession}`)
     );
     if (titleMatch) {
@@ -488,7 +497,7 @@ export async function findAgentWindow(
   // Priority 2: Match by CWD (fallback when title doesn't match)
   if (cwd) {
     const normalizedCwd = cwd.replace(/\/+$/, ""); // Remove trailing slash
-    const cwdMatch = allWindows.find(w => {
+    const cwdMatch = allWindows.find((w) => {
       const windowCwd = w.cwd.replace(/\/+$/, "");
       return windowCwd === normalizedCwd;
     });
@@ -500,8 +509,8 @@ export async function findAgentWindow(
   // Priority 3: Match by cmdline containing agent name (last resort)
   // For Cursor, the CLI command is "agent", not "cursor"
   const agentCmd = agentType === "Cursor" ? "agent" : agentType.toLowerCase();
-  const cmdlineMatch = allWindows.find(w =>
-    w.cmdline.some(arg => arg.toLowerCase().includes(agentCmd))
+  const cmdlineMatch = allWindows.find((w) =>
+    w.cmdline.some((arg) => arg.toLowerCase().includes(agentCmd))
   );
   if (cmdlineMatch) {
     return cmdlineMatch;
@@ -679,28 +688,29 @@ export async function launchKittyWithRemoteControl(
   // Check if the binary exists
   if (!existsSync(kittyBin)) {
     return {
+      error: `Kitty binary not found at ${kittyBin}`,
       success: false,
-      error: `Kitty binary not found at ${kittyBin}`
     };
   }
 
   try {
     const args: string[] = [
-      "--listen-on", DEFAULT_KITTY_SOCKET,  // Full unix:/tmp/kitty format required
-      "--single-instance"
+      "--listen-on",
+      DEFAULT_KITTY_SOCKET, // Full unix:/tmp/kitty format required
+      "--single-instance",
     ];
 
     if (cwd) {
       args.push("--directory", cwd);
     }
 
-    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")} &`;
+    const cmd = `"${kittyBin}" ${args.map((arg) => `"${arg.replaceAll('"', '\\"')}"`).join(" ")} &`;
 
     await execAsync(cmd, { timeout: 5000 });
 
     // Give Kitty more time to start and create the socket
     // 500ms was often not enough for Kitty to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Clear socket cache so we discover the new socket
     clearSocketCache();
@@ -708,8 +718,8 @@ export async function launchKittyWithRemoteControl(
     return { success: true };
   } catch (error) {
     return {
+      error: `Failed to launch Kitty: ${error}`,
       success: false,
-      error: `Failed to launch Kitty: ${error}`
     };
   }
 }
@@ -732,8 +742,8 @@ export async function launchClaudeWindow(
       return windowId;
     }
     lastLaunchError = `Remote launch returned null, socket: ${socketPath}`;
-  } catch (err) {
-    lastLaunchError = `Remote launch failed: ${err}, socket: ${socketPath}`;
+  } catch (error) {
+    lastLaunchError = `Remote launch failed: ${error}, socket: ${socketPath}`;
   }
 
   // Fallback: Launch Kitty directly if remote control failed
@@ -747,7 +757,7 @@ export async function launchClaudeWindow(
     // Use interactive shell to ensure aliases are available
     args.push("--", shell, "-i", "-c", "claude");
 
-    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+    const cmd = `"${kittyBin}" ${args.map((arg) => `"${arg.replaceAll('"', '\\"')}"`).join(" ")}`;
     await execAsync(cmd, { timeout: 5000 });
     // Return -1 to indicate success via direct launch (no window ID available)
     return -1;
@@ -775,8 +785,8 @@ export async function launchGeminiWindow(
       return windowId;
     }
     lastLaunchError = `Remote launch returned null, socket: ${socketPath}`;
-  } catch (err) {
-    lastLaunchError = `Remote launch failed: ${err}, socket: ${socketPath}`;
+  } catch (error) {
+    lastLaunchError = `Remote launch failed: ${error}, socket: ${socketPath}`;
   }
 
   // Fallback: Launch Kitty directly if remote control failed
@@ -790,7 +800,7 @@ export async function launchGeminiWindow(
     // Use interactive shell to ensure aliases are available
     args.push("--", shell, "-i", "-c", "gemini");
 
-    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+    const cmd = `"${kittyBin}" ${args.map((arg) => `"${arg.replaceAll('"', '\\"')}"`).join(" ")}`;
     await execAsync(cmd, { timeout: 5000 });
     // Return -1 to indicate success via direct launch (no window ID available)
     return -1;
@@ -818,8 +828,8 @@ export async function launchCursorWindow(
       return windowId;
     }
     lastLaunchError = `Remote launch returned null, socket: ${socketPath}`;
-  } catch (err) {
-    lastLaunchError = `Remote launch failed: ${err}, socket: ${socketPath}`;
+  } catch (error) {
+    lastLaunchError = `Remote launch failed: ${error}, socket: ${socketPath}`;
   }
 
   // Fallback: Launch Kitty directly if remote control failed
@@ -833,7 +843,7 @@ export async function launchCursorWindow(
     // Use interactive shell to ensure aliases are available
     args.push("--", shell, "-i", "-c", "agent");
 
-    const cmd = `"${kittyBin}" ${args.map(arg => `"${arg.replace(/"/g, '\\"')}"`).join(" ")}`;
+    const cmd = `"${kittyBin}" ${args.map((arg) => `"${arg.replaceAll('"', '\\"')}"`).join(" ")}`;
     await execAsync(cmd, { timeout: 5000 });
     // Return -1 to indicate success via direct launch (no window ID available)
     return -1;

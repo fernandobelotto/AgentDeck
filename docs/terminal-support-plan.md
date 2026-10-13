@@ -18,21 +18,19 @@ This document outlines the implementation plan for adding support for popular ma
 
 ## 1. iTerm2
 
-**Popularity:** #1 third-party terminal on macOS
-**Estimated Effort:** Medium (4-6 hours)
-**API Type:** Python API (`it2api`) + AppleScript
-**Documentation:** https://iterm2.com/documentation-scripting.html
+**Popularity:** #1 third-party terminal on macOS **Estimated Effort:** Medium (4-6 hours) **API Type:** Python API (`it2api`) + AppleScript **Documentation:** https://iterm2.com/documentation-scripting.html
 
 ### 1.1 Overview
 
 iTerm2 is the dominant terminal emulator on macOS. It offers two programmatic interfaces:
+
 - **Python API** - Full-featured but requires enabling and Python installation
 - **AppleScript** - More universally available, sufficient for our needs
 
 ### 1.2 Required Features Mapping
 
 | AgentDeck Feature | iTerm2 Implementation |
-|-------------------|----------------------|
+| --- | --- |
 | List windows/sessions | AppleScript: `tell application "iTerm2" to get windows` |
 | Get session metadata (cwd, pid) | AppleScript: `tty`, `name`; Python API for cwd |
 | Focus window/session | AppleScript: `select` session/window |
@@ -116,7 +114,7 @@ end tell
 #### 1.3.3 Files to Create/Modify
 
 | File | Action | Description |
-|------|--------|-------------|
+| --- | --- | --- |
 | `src/utils/iterm2-remote.ts` | Create | ~400-500 lines - AppleScript wrapper functions |
 | `src/utils/applescript-runner.ts` | Create | ~50 lines - Generic AppleScript execution helper |
 | `src/utils/terminal-focus.ts` | Modify | Add iTerm2 detection and routing |
@@ -148,6 +146,7 @@ end tell
 #### 1.3.5 User Configuration
 
 Users will need to:
+
 - No special configuration required (AppleScript works out of the box)
 - Optional: Enable Python API for advanced features
 
@@ -155,10 +154,7 @@ Users will need to:
 
 ## 2. Terminal.app
 
-**Popularity:** Built-in default, used by many casual users
-**Estimated Effort:** Medium (3-4 hours)
-**API Type:** AppleScript only
-**Documentation:** https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/
+**Popularity:** Built-in default, used by many casual users **Estimated Effort:** Medium (3-4 hours) **API Type:** AppleScript only **Documentation:** https://developer.apple.com/library/archive/documentation/AppleScript/Conceptual/AppleScriptLangGuide/
 
 ### 2.1 Overview
 
@@ -166,14 +162,14 @@ Terminal.app is macOS's built-in terminal. It has basic AppleScript support but 
 
 ### 2.2 Required Features Mapping
 
-| AgentDeck Feature | Terminal.app Implementation |
-|-------------------|----------------------------|
+| AgentDeck Feature | Terminal.app Implementation                      |
+| ----------------- | ------------------------------------------------ |
 | List windows/tabs | AppleScript: `get windows`, `get tabs of window` |
-| Get tab metadata | Limited: `name`, `tty`, `busy` |
-| Focus window/tab | AppleScript: `set selected of tab to true` |
-| Send text | AppleScript: `do script "..." in tab` |
-| Send keystrokes | System Events keystroke injection |
-| Launch new window | AppleScript: `do script "claude"` |
+| Get tab metadata  | Limited: `name`, `tty`, `busy`                   |
+| Focus window/tab  | AppleScript: `set selected of tab to true`       |
+| Send text         | AppleScript: `do script "..." in tab`            |
+| Send keystrokes   | System Events keystroke injection                |
+| Launch new window | AppleScript: `do script "claude"`                |
 
 ### 2.3 Implementation Details
 
@@ -229,7 +225,7 @@ end tell
 #### 2.3.3 Files to Create/Modify
 
 | File | Action | Description |
-|------|--------|-------------|
+| --- | --- | --- |
 | `src/utils/terminal-app-remote.ts` | Create | ~300 lines - AppleScript wrapper |
 | `src/utils/terminal-focus.ts` | Modify | Add Terminal.app routing |
 | `src/utils/terminal-detector.ts` | Modify | Add Terminal.app detection |
@@ -253,16 +249,14 @@ end tell
 #### 2.3.5 User Configuration
 
 Users will need to:
+
 - Grant accessibility permissions for keystroke injection (System Preferences > Privacy > Accessibility)
 
 ---
 
 ## 3. Warp
 
-**Popularity:** Rapidly growing, modern terminal with AI features
-**Estimated Effort:** High (6-8 hours) or Limited Support
-**API Type:** Limited CLI, Proprietary
-**Documentation:** https://docs.warp.dev/
+**Popularity:** Rapidly growing, modern terminal with AI features **Estimated Effort:** High (6-8 hours) or Limited Support **API Type:** Limited CLI, Proprietary **Documentation:** https://docs.warp.dev/
 
 ### 3.1 Overview
 
@@ -270,14 +264,14 @@ Warp is a modern, Rust-based terminal with AI features. It has limited external 
 
 ### 3.2 Required Features Mapping
 
-| AgentDeck Feature | Warp Implementation |
-|-------------------|---------------------|
-| List windows | AppleScript (basic) |
-| Get session metadata | Very limited |
-| Focus window | AppleScript: `activate` |
-| Send text | **Not supported externally** |
-| Send keystrokes | System Events (limited) |
-| Launch new window | `warp` CLI or `open -a Warp` |
+| AgentDeck Feature    | Warp Implementation          |
+| -------------------- | ---------------------------- |
+| List windows         | AppleScript (basic)          |
+| Get session metadata | Very limited                 |
+| Focus window         | AppleScript: `activate`      |
+| Send text            | **Not supported externally** |
+| Send keystrokes      | System Events (limited)      |
+| Launch new window    | `warp` CLI or `open -a Warp` |
 
 ### 3.3 Implementation Details
 
@@ -315,18 +309,18 @@ end tell
 
 #### 3.3.3 Feasible Features
 
-| Feature | Feasibility |
-|---------|-------------|
-| Focus Warp window | Yes (AppleScript activate) |
-| Launch new instance | Yes (open -a Warp) |
-| Send text to session | No |
-| Send keystrokes | Partial (System Events, unreliable) |
-| Get session state | No |
+| Feature              | Feasibility                         |
+| -------------------- | ----------------------------------- |
+| Focus Warp window    | Yes (AppleScript activate)          |
+| Launch new instance  | Yes (open -a Warp)                  |
+| Send text to session | No                                  |
+| Send keystrokes      | Partial (System Events, unreliable) |
+| Get session state    | No                                  |
 
 #### 3.3.4 Files to Create/Modify
 
 | File | Action | Description |
-|------|--------|-------------|
+| --- | --- | --- |
 | `src/utils/warp-remote.ts` | Create | ~100 lines - Basic focus/launch only |
 | `src/utils/terminal-focus.ts` | Modify | Add Warp routing (limited) |
 
@@ -352,10 +346,7 @@ end tell
 
 ## 4. Kitty
 
-**Popularity:** Popular among power users
-**Estimated Effort:** Already Implemented
-**API Type:** `kitten @` remote control protocol
-**Documentation:** https://sw.kovidgoyal.net/kitty/remote-control/
+**Popularity:** Popular among power users **Estimated Effort:** Already Implemented **API Type:** `kitten @` remote control protocol **Documentation:** https://sw.kovidgoyal.net/kitty/remote-control/
 
 ### 4.1 Overview
 
@@ -365,18 +356,19 @@ Kitty is already fully supported in AgentDeck. This section documents the curren
 
 Located in `src/utils/kitty-remote.ts` (~845 lines)
 
-| Feature | Command |
-|---------|---------|
-| List windows | `kitten @ ls` |
-| Focus window | `kitten @ focus-window --match id:X` |
-| Send text | `kitten @ send-text` |
-| Send key | `kitten @ send-key` |
-| Scroll window | `kitten @ scroll-window` |
-| Launch window | `kitten @ launch` |
+| Feature       | Command                              |
+| ------------- | ------------------------------------ |
+| List windows  | `kitten @ ls`                        |
+| Focus window  | `kitten @ focus-window --match id:X` |
+| Send text     | `kitten @ send-text`                 |
+| Send key      | `kitten @ send-key`                  |
+| Scroll window | `kitten @ scroll-window`             |
+| Launch window | `kitten @ launch`                    |
 
 ### 4.3 User Configuration
 
 Users must enable remote control in `~/.config/kitty/kitty.conf`:
+
 ```
 allow_remote_control yes
 listen_on unix:/tmp/kitty
@@ -386,10 +378,7 @@ listen_on unix:/tmp/kitty
 
 ## 5. Alacritty
 
-**Popularity:** Popular for minimalism and speed
-**Estimated Effort:** Very Limited Support
-**API Type:** None (by design)
-**Documentation:** https://alacritty.org/
+**Popularity:** Popular for minimalism and speed **Estimated Effort:** Very Limited Support **API Type:** None (by design) **Documentation:** https://alacritty.org/
 
 ### 5.1 Overview
 
@@ -397,14 +386,14 @@ Alacritty is intentionally minimal and does not include any remote control API. 
 
 ### 5.2 Required Features Mapping
 
-| AgentDeck Feature | Alacritty Implementation |
-|-------------------|-------------------------|
-| List windows | Not possible |
-| Get session metadata | Not possible |
-| Focus window | AppleScript `activate` only |
-| Send text | **Not supported** |
-| Send keystrokes | System Events (very limited) |
-| Launch new window | `alacritty` CLI |
+| AgentDeck Feature    | Alacritty Implementation     |
+| -------------------- | ---------------------------- |
+| List windows         | Not possible                 |
+| Get session metadata | Not possible                 |
+| Focus window         | AppleScript `activate` only  |
+| Send text            | **Not supported**            |
+| Send keystrokes      | System Events (very limited) |
+| Launch new window    | `alacritty` CLI              |
 
 ### 5.3 Implementation Details
 
@@ -436,20 +425,20 @@ end tell
 
 #### 5.3.3 Feasible Features
 
-| Feature | Feasibility |
-|---------|-------------|
-| Focus Alacritty | Yes (AppleScript activate) |
-| Launch new instance | Yes (alacritty CLI) |
-| Send text to session | No |
-| Send keystrokes | No (System Events unreliable) |
-| Get session state | No |
+| Feature              | Feasibility                   |
+| -------------------- | ----------------------------- |
+| Focus Alacritty      | Yes (AppleScript activate)    |
+| Launch new instance  | Yes (alacritty CLI)           |
+| Send text to session | No                            |
+| Send keystrokes      | No (System Events unreliable) |
+| Get session state    | No                            |
 
 #### 5.3.4 Files to Create/Modify
 
-| File | Action | Description |
-|------|--------|-------------|
+| File                            | Action | Description                   |
+| ------------------------------- | ------ | ----------------------------- |
 | `src/utils/alacritty-remote.ts` | Create | ~60 lines - Launch/focus only |
-| `src/utils/terminal-focus.ts` | Modify | Add Alacritty routing |
+| `src/utils/terminal-focus.ts`   | Modify | Add Alacritty routing         |
 
 #### 5.3.5 Implementation Steps
 
@@ -468,10 +457,7 @@ end tell
 
 ## 6. WezTerm
 
-**Popularity:** Growing, attracts Kitty users
-**Estimated Effort:** Low (2-3 hours)
-**API Type:** `wezterm cli` commands
-**Documentation:** https://wezfurlong.org/wezterm/cli/cli.html
+**Popularity:** Growing, attracts Kitty users **Estimated Effort:** Low (2-3 hours) **API Type:** `wezterm cli` commands **Documentation:** https://wezfurlong.org/wezterm/cli/cli.html
 
 ### 6.1 Overview
 
@@ -479,15 +465,15 @@ WezTerm has a CLI almost identical to Kitty's remote control. This makes it the 
 
 ### 6.2 Required Features Mapping
 
-| AgentDeck Feature | WezTerm Implementation |
-|-------------------|------------------------|
-| List windows/panes | `wezterm cli list --format json` |
-| Get pane metadata | Included in list output (cwd, title, pid) |
-| Focus pane | `wezterm cli activate-pane --pane-id X` |
-| Send text | `wezterm cli send-text --pane-id X "text"` |
-| Send keystrokes | `wezterm cli send-text --pane-id X --no-paste $'\x03'` |
-| Launch new pane | `wezterm cli spawn` |
-| Launch new window | `wezterm cli spawn --new-window` |
+| AgentDeck Feature  | WezTerm Implementation                                 |
+| ------------------ | ------------------------------------------------------ |
+| List windows/panes | `wezterm cli list --format json`                       |
+| Get pane metadata  | Included in list output (cwd, title, pid)              |
+| Focus pane         | `wezterm cli activate-pane --pane-id X`                |
+| Send text          | `wezterm cli send-text --pane-id X "text"`             |
+| Send keystrokes    | `wezterm cli send-text --pane-id X --no-paste $'\x03'` |
+| Launch new pane    | `wezterm cli spawn`                                    |
+| Launch new window  | `wezterm cli spawn --new-window`                       |
 
 ### 6.3 Implementation Details
 
@@ -526,7 +512,7 @@ wezterm cli spawn --new-window --cwd /path/to/dir -- claude
     "tab_id": 0,
     "pane_id": 0,
     "workspace": "default",
-    "size": {"rows": 24, "cols": 80},
+    "size": { "rows": 24, "cols": 80 },
     "title": "claude",
     "cwd": "file:///Users/user/project",
     "cursor_x": 0,
@@ -545,7 +531,7 @@ wezterm cli spawn --new-window --cwd /path/to/dir -- claude
 #### 6.3.3 Files to Create/Modify
 
 | File | Action | Description |
-|------|--------|-------------|
+| --- | --- | --- |
 | `src/utils/wezterm-remote.ts` | Create | ~300 lines - Direct port from kitty-remote.ts |
 | `src/utils/terminal-focus.ts` | Modify | Add WezTerm routing |
 | `src/utils/terminal-detector.ts` | Modify | Add WezTerm detection |
@@ -577,10 +563,7 @@ For remote domains, users may need to specify `--pane-id` from the correct domai
 
 ## 7. Hyper
 
-**Popularity:** Declining, still has users
-**Estimated Effort:** Medium-High (5-7 hours)
-**API Type:** JavaScript plugin API, limited external control
-**Documentation:** https://hyper.is/
+**Popularity:** Declining, still has users **Estimated Effort:** Medium-High (5-7 hours) **API Type:** JavaScript plugin API, limited external control **Documentation:** https://hyper.is/
 
 ### 7.1 Overview
 
@@ -588,14 +571,14 @@ Hyper is an Electron-based terminal. While highly extensible via plugins, it lac
 
 ### 7.2 Required Features Mapping
 
-| AgentDeck Feature | Hyper Implementation |
-|-------------------|----------------------|
-| List windows | Not directly available |
-| Get session metadata | Requires custom plugin |
-| Focus window | AppleScript `activate` |
-| Send text | **Requires custom plugin** |
-| Send keystrokes | System Events or custom plugin |
-| Launch new window | `hyper` CLI or `open -a Hyper` |
+| AgentDeck Feature    | Hyper Implementation           |
+| -------------------- | ------------------------------ |
+| List windows         | Not directly available         |
+| Get session metadata | Requires custom plugin         |
+| Focus window         | AppleScript `activate`         |
+| Send text            | **Requires custom plugin**     |
+| Send keystrokes      | System Events or custom plugin |
+| Launch new window    | `hyper` CLI or `open -a Hyper` |
 
 ### 7.3 Implementation Details
 
@@ -622,6 +605,7 @@ end tell
 #### 7.3.2 Plugin Approach
 
 To fully support Hyper, we would need to:
+
 1. Create a Hyper plugin that exposes an IPC server
 2. The plugin would handle commands from AgentDeck
 3. Communicate via local HTTP or Unix socket
@@ -630,37 +614,39 @@ This is complex and requires users to install our plugin.
 
 #### 7.3.3 Feasible Features (Without Plugin)
 
-| Feature | Feasibility |
-|---------|-------------|
-| Focus Hyper | Yes (AppleScript activate) |
-| Launch new instance | Yes (hyper CLI or open -a) |
-| Send text to session | No |
-| Send keystrokes | Limited (System Events) |
-| Get session state | No |
+| Feature              | Feasibility                |
+| -------------------- | -------------------------- |
+| Focus Hyper          | Yes (AppleScript activate) |
+| Launch new instance  | Yes (hyper CLI or open -a) |
+| Send text to session | No                         |
+| Send keystrokes      | Limited (System Events)    |
+| Get session state    | No                         |
 
 #### 7.3.4 Files to Create/Modify
 
 **Basic support (no plugin):**
 
-| File | Action | Description |
-|------|--------|-------------|
-| `src/utils/hyper-remote.ts` | Create | ~80 lines - Launch/focus only |
-| `src/utils/terminal-focus.ts` | Modify | Add Hyper routing |
+| File                          | Action | Description                   |
+| ----------------------------- | ------ | ----------------------------- |
+| `src/utils/hyper-remote.ts`   | Create | ~80 lines - Launch/focus only |
+| `src/utils/terminal-focus.ts` | Modify | Add Hyper routing             |
 
 **Full support (with plugin):**
 
-| File | Action | Description |
-|------|--------|-------------|
-| `hyper-agentdeck-plugin/` | Create | Separate npm package |
+| File                        | Action | Description             |
+| --------------------------- | ------ | ----------------------- |
+| `hyper-agentdeck-plugin/`   | Create | Separate npm package    |
 | `src/utils/hyper-remote.ts` | Create | ~250 lines - IPC client |
 
 #### 7.3.5 Implementation Steps
 
 **Phase 1: Basic support**
+
 1. Implement launch and focus only
 2. Document that full features require the plugin
 
 **Phase 2: Full support (optional)**
+
 1. Create Hyper plugin with IPC server
 2. Plugin exposes: listSessions, sendText, getMetadata
 3. AgentDeck connects as IPC client
@@ -676,7 +662,7 @@ This is complex and requires users to install our plugin.
 Based on popularity and effort, here's the recommended implementation order:
 
 | Priority | Terminal | Effort | User Impact | Recommendation |
-|----------|----------|--------|-------------|----------------|
+| --- | --- | --- | --- | --- |
 | 1 | **iTerm2** | Medium | Very High | Full support via AppleScript |
 | 2 | **WezTerm** | Low | Medium | Full support (Kitty-like API) |
 | 3 | **Terminal.app** | Medium | Medium | Full support with permissions |
@@ -713,10 +699,14 @@ export interface TerminalRemote {
   name: string;
   isAvailable(): Promise<boolean>;
   listWindows(): Promise<TerminalWindow[]>;
-  findAgentWindow(agentType: AgentType, sessionId?: string, cwd?: string): Promise<TerminalWindow | null>;
+  findAgentWindow(
+    agentType: AgentType,
+    sessionId?: string,
+    cwd?: string
+  ): Promise<TerminalWindow | null>;
   focusWindow(windowId: string): Promise<boolean>;
   sendText(windowId: string, text: string): Promise<boolean>;
-  sendKey(windowId: string, key: 'enter' | 'ctrl+c'): Promise<boolean>;
+  sendKey(windowId: string, key: "enter" | "ctrl+c"): Promise<boolean>;
   launchWindow(command: string, cwd?: string): Promise<string | null>;
 }
 ```
@@ -726,11 +716,14 @@ export interface TerminalRemote {
 ```typescript
 // src/utils/terminal-detector.ts
 
-export type TerminalType = 'kitty' | 'wezterm' | 'iterm2' | 'terminal' | 'warp' | 'alacritty' | 'hyper';
+export type TerminalType =
+  "kitty" | "wezterm" | "iterm2" | "terminal" | "warp" | "alacritty" | "hyper";
 
 export async function detectActiveTerminal(): Promise<TerminalType | null>;
 export async function detectAvailableTerminals(): Promise<TerminalType[]>;
-export async function getTerminalRemote(type: TerminalType): Promise<TerminalRemote>;
+export async function getTerminalRemote(
+  type: TerminalType
+): Promise<TerminalRemote>;
 ```
 
 ### Configuration

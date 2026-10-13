@@ -1,6 +1,14 @@
 import type { ClaudeState, InstanceSource } from "../server/types.js";
 
-type AnimationType = 'none' | 'orbit' | 'ripple' | 'float' | 'pulse' | 'wave' | 'breathing' | 'shake';
+type AnimationType =
+  | "none"
+  | "orbit"
+  | "ripple"
+  | "float"
+  | "pulse"
+  | "wave"
+  | "breathing"
+  | "shake";
 
 interface StateConfig {
   primaryColor: string;
@@ -14,295 +22,300 @@ interface StateConfig {
 
 // Anthropic color palette (Claude)
 const ANTHROPIC = {
-  black: "#141413",      // Primary background
-  cream: "#FAF9F5",      // Light text/accents
-  orange: "#D97657",     // Claude brand color (terracotta)
-  darkGray: "#1F1E1D",   // Secondary dark
-  gray: "#30302E",       // Tertiary gray
+  black: "#141413", // Primary background
+  cream: "#FAF9F5", // Light text/accents
+  darkGray: "#1F1E1D", // Secondary dark
+  gray: "#30302E", // Tertiary gray
+  orange: "#D97657", // Claude brand color (terracotta)
 };
 
 // Google color palette (Gemini)
 const GOOGLE = {
-  black: "#141413",      // Same background for consistency
-  cream: "#FAF9F5",      // Same light text
-  blue: "#4285F4",       // Google Blue (Gemini brand)
-  darkGray: "#1F1E1D",   // Same secondary dark
-  gray: "#30302E",       // Same tertiary gray
+  black: "#141413", // Same background for consistency
+  blue: "#4285F4", // Google Blue (Gemini brand)
+  cream: "#FAF9F5", // Same light text
+  darkGray: "#1F1E1D", // Same secondary dark
+  gray: "#30302E", // Same tertiary gray
 };
 
 // Cursor color palette (Cursor Agent)
 const CURSOR = {
-  black: "#141413",      // Same background for consistency
-  cream: "#FAF9F5",      // Same light text
-  purple: "#8B5CF6",     // Cursor Purple (brand color)
-  darkGray: "#1F1E1D",   // Same secondary dark
-  gray: "#30302E",       // Same tertiary gray
+  black: "#141413", // Same background for consistency
+  cream: "#FAF9F5", // Same light text
+  darkGray: "#1F1E1D", // Same secondary dark
+  gray: "#30302E", // Same tertiary gray
+  purple: "#8B5CF6", // Cursor Purple (brand color)
 };
 
 // Claude state configs
 const CLAUDE_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
-  idle: {
-    primaryColor: ANTHROPIC.orange,
-    secondaryColor: "#C4684D",
-    glowColor: "#D9765740",
-    icon: "claude",
-    animationType: 'none',
-    animationFrames: 1,
-    label: "Ready"
-  },
-  running: {
-    primaryColor: "#60A5FA",
-    secondaryColor: "#3B82F6",
-    glowColor: "#60A5FA50",
-    icon: "loader",
-    animationType: 'orbit',
-    animationFrames: 96,  // 8 seconds at 12fps
-    label: "Running"
-  },
-  tool_use: {
-    primaryColor: ANTHROPIC.orange,
-    secondaryColor: "#C4684D",
-    glowColor: "#D9765750",
-    icon: "wrench",
-    animationType: 'ripple',
-    animationFrames: 72,  // 6 seconds at 12fps
-    label: "Tool"
-  },
-  editing: {
-    primaryColor: "#A78BFA",
-    secondaryColor: "#8B5CF6",
-    glowColor: "#A78BFA50",
-    icon: "pencil",
-    animationType: 'float',
-    animationFrames: 84,  // 7 seconds at 12fps
-    label: "Edit"
-  },
-  question: {
-    primaryColor: ANTHROPIC.cream,
-    secondaryColor: "#E8E7E3",
-    glowColor: "#FAF9F560",
-    icon: "help",
-    animationType: 'pulse',
-    animationFrames: 48,  // 4 seconds at 12fps
-    label: "Input"
-  },
-  plan_prompt: {
-    primaryColor: "#22D3EE",     // Cyan for plan mode
-    secondaryColor: "#06B6D4",
-    glowColor: "#22D3EE60",
-    icon: "compass",
-    animationType: 'pulse',
-    animationFrames: 48,  // 4 seconds at 12fps
-    label: "Plan?"
-  },
-  permission: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717170",
-    icon: "shield",
-    animationType: 'wave',
-    animationFrames: 60,  // 5 seconds at 12fps
-    label: "Approve?"
-  },
-  error: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717140",
-    icon: "alert",
-    animationType: 'shake',
-    animationFrames: 24,  // 2 seconds at 12fps - shake then settle
-    label: "Error"
-  },
   disconnected: {
-    primaryColor: ANTHROPIC.gray,
-    secondaryColor: ANTHROPIC.darkGray,
+    animationFrames: 1,
+    animationType: "none",
     glowColor: "#30302E30",
     icon: "unplug",
-    animationType: 'none',
+    label: "Offline",
+    primaryColor: ANTHROPIC.gray,
+    secondaryColor: ANTHROPIC.darkGray,
+  },
+  editing: {
+    animationFrames: 84, // 7 seconds at 12fps
+    animationType: "float",
+    glowColor: "#A78BFA50",
+    icon: "pencil",
+    label: "Edit",
+    primaryColor: "#A78BFA",
+    secondaryColor: "#8B5CF6",
+  },
+  error: {
+    animationFrames: 24, // 2 seconds at 12fps - shake then settle
+    animationType: "shake",
+    glowColor: "#F8717140",
+    icon: "alert",
+    label: "Error",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  idle: {
     animationFrames: 1,
-    label: "Offline"
-  }
+    animationType: "none",
+    glowColor: "#D9765740",
+    icon: "claude",
+    label: "Ready",
+    primaryColor: ANTHROPIC.orange,
+    secondaryColor: "#C4684D",
+  },
+  permission: {
+    animationFrames: 60, // 5 seconds at 12fps
+    animationType: "wave",
+    glowColor: "#F8717170",
+    icon: "shield",
+    label: "Approve?",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  plan_prompt: {
+    animationFrames: 48, // 4 seconds at 12fps
+    animationType: "pulse",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    label: "Plan?",
+    primaryColor: "#22D3EE", // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+  },
+  question: {
+    animationFrames: 48, // 4 seconds at 12fps
+    animationType: "pulse",
+    glowColor: "#FAF9F560",
+    icon: "help",
+    label: "Input",
+    primaryColor: ANTHROPIC.cream,
+    secondaryColor: "#E8E7E3",
+  },
+  running: {
+    animationFrames: 96, // 8 seconds at 12fps
+    animationType: "orbit",
+    glowColor: "#60A5FA50",
+    icon: "loader",
+    label: "Running",
+    primaryColor: "#60A5FA",
+    secondaryColor: "#3B82F6",
+  },
+  tool_use: {
+    animationFrames: 72, // 6 seconds at 12fps
+    animationType: "ripple",
+    glowColor: "#D9765750",
+    icon: "wrench",
+    label: "Tool",
+    primaryColor: ANTHROPIC.orange,
+    secondaryColor: "#C4684D",
+  },
 };
 
 // Gemini state configs - Google Blue themed
 const GEMINI_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
-  idle: {
-    primaryColor: GOOGLE.blue,
-    secondaryColor: "#3367D6",
-    glowColor: "#4285F440",
-    icon: "gemini",  // Gemini sparkle icon
-    animationType: 'none',
-    animationFrames: 1,
-    label: "Ready"
-  },
-  running: {
-    primaryColor: "#60A5FA",
-    secondaryColor: "#3B82F6",
-    glowColor: "#60A5FA50",
-    icon: "loader",
-    animationType: 'orbit',
-    animationFrames: 96,
-    label: "Running"
-  },
-  tool_use: {
-    primaryColor: GOOGLE.blue,
-    secondaryColor: "#3367D6",
-    glowColor: "#4285F450",
-    icon: "wrench",
-    animationType: 'ripple',
-    animationFrames: 72,
-    label: "Tool"
-  },
-  editing: {
-    primaryColor: "#7C4DFF",  // Purple-blue for Gemini editing
-    secondaryColor: "#651FFF",
-    glowColor: "#7C4DFF50",
-    icon: "pencil",
-    animationType: 'float',
-    animationFrames: 84,
-    label: "Edit"
-  },
-  question: {
-    primaryColor: GOOGLE.cream,
-    secondaryColor: "#E8E7E3",
-    glowColor: "#FAF9F560",
-    icon: "help",
-    animationType: 'pulse',
-    animationFrames: 48,
-    label: "Input"
-  },
-  plan_prompt: {
-    primaryColor: "#22D3EE",     // Cyan for plan mode
-    secondaryColor: "#06B6D4",
-    glowColor: "#22D3EE60",
-    icon: "compass",
-    animationType: 'pulse',
-    animationFrames: 48,
-    label: "Plan?"
-  },
-  permission: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717170",
-    icon: "shield",
-    animationType: 'wave',
-    animationFrames: 60,
-    label: "Approve?"
-  },
-  error: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717140",
-    icon: "alert",
-    animationType: 'shake',
-    animationFrames: 24,  // 2 seconds at 12fps - shake then settle
-    label: "Error"
-  },
   disconnected: {
-    primaryColor: GOOGLE.gray,
-    secondaryColor: GOOGLE.darkGray,
+    animationFrames: 1,
+    animationType: "none",
     glowColor: "#30302E30",
     icon: "unplug",
-    animationType: 'none',
+    label: "Offline",
+    primaryColor: GOOGLE.gray,
+    secondaryColor: GOOGLE.darkGray,
+  },
+  editing: {
+    animationFrames: 84,
+    animationType: "float",
+    glowColor: "#7C4DFF50",
+    icon: "pencil",
+    label: "Edit",
+    primaryColor: "#7C4DFF", // Purple-blue for Gemini editing
+    secondaryColor: "#651FFF",
+  },
+  error: {
+    animationFrames: 24, // 2 seconds at 12fps - shake then settle
+    animationType: "shake",
+    glowColor: "#F8717140",
+    icon: "alert",
+    label: "Error",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  idle: {
     animationFrames: 1,
-    label: "Offline"
-  }
+    animationType: "none",
+    glowColor: "#4285F440",
+    icon: "gemini", // Gemini sparkle icon
+    label: "Ready",
+    primaryColor: GOOGLE.blue,
+    secondaryColor: "#3367D6",
+  },
+  permission: {
+    animationFrames: 60,
+    animationType: "wave",
+    glowColor: "#F8717170",
+    icon: "shield",
+    label: "Approve?",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  plan_prompt: {
+    animationFrames: 48,
+    animationType: "pulse",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    label: "Plan?",
+    primaryColor: "#22D3EE", // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+  },
+  question: {
+    animationFrames: 48,
+    animationType: "pulse",
+    glowColor: "#FAF9F560",
+    icon: "help",
+    label: "Input",
+    primaryColor: GOOGLE.cream,
+    secondaryColor: "#E8E7E3",
+  },
+  running: {
+    animationFrames: 96,
+    animationType: "orbit",
+    glowColor: "#60A5FA50",
+    icon: "loader",
+    label: "Running",
+    primaryColor: "#60A5FA",
+    secondaryColor: "#3B82F6",
+  },
+  tool_use: {
+    animationFrames: 72,
+    animationType: "ripple",
+    glowColor: "#4285F450",
+    icon: "wrench",
+    label: "Tool",
+    primaryColor: GOOGLE.blue,
+    secondaryColor: "#3367D6",
+  },
 };
 
 // Cursor state configs - Cursor Purple themed
 const CURSOR_STATE_CONFIGS: Record<ClaudeState, StateConfig> = {
-  idle: {
-    primaryColor: CURSOR.purple,
-    secondaryColor: "#7C3AED",
-    glowColor: "#8B5CF640",
-    icon: "cursor",  // Cursor pointer icon
-    animationType: 'none',
-    animationFrames: 1,
-    label: "Ready"
-  },
-  running: {
-    primaryColor: "#A78BFA",
-    secondaryColor: "#8B5CF6",
-    glowColor: "#A78BFA50",
-    icon: "loader",
-    animationType: 'orbit',
-    animationFrames: 96,
-    label: "Running"
-  },
-  tool_use: {
-    primaryColor: CURSOR.purple,
-    secondaryColor: "#7C3AED",
-    glowColor: "#8B5CF650",
-    icon: "wrench",
-    animationType: 'ripple',
-    animationFrames: 72,
-    label: "Tool"
-  },
-  editing: {
-    primaryColor: "#C084FC",  // Lighter purple for editing
-    secondaryColor: "#A855F7",
-    glowColor: "#C084FC50",
-    icon: "pencil",
-    animationType: 'float',
-    animationFrames: 84,
-    label: "Edit"
-  },
-  question: {
-    primaryColor: CURSOR.cream,
-    secondaryColor: "#E8E7E3",
-    glowColor: "#FAF9F560",
-    icon: "help",
-    animationType: 'pulse',
-    animationFrames: 48,
-    label: "Input"
-  },
-  plan_prompt: {
-    primaryColor: "#22D3EE",     // Cyan for plan mode
-    secondaryColor: "#06B6D4",
-    glowColor: "#22D3EE60",
-    icon: "compass",
-    animationType: 'pulse',
-    animationFrames: 48,
-    label: "Plan?"
-  },
-  permission: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717170",
-    icon: "shield",
-    animationType: 'wave',
-    animationFrames: 60,
-    label: "Approve?"
-  },
-  error: {
-    primaryColor: "#F87171",
-    secondaryColor: "#EF4444",
-    glowColor: "#F8717140",
-    icon: "alert",
-    animationType: 'shake',
-    animationFrames: 24,
-    label: "Error"
-  },
   disconnected: {
-    primaryColor: CURSOR.gray,
-    secondaryColor: CURSOR.darkGray,
+    animationFrames: 1,
+    animationType: "none",
     glowColor: "#30302E30",
     icon: "unplug",
-    animationType: 'none',
+    label: "Offline",
+    primaryColor: CURSOR.gray,
+    secondaryColor: CURSOR.darkGray,
+  },
+  editing: {
+    animationFrames: 84,
+    animationType: "float",
+    glowColor: "#C084FC50",
+    icon: "pencil",
+    label: "Edit",
+    primaryColor: "#C084FC", // Lighter purple for editing
+    secondaryColor: "#A855F7",
+  },
+  error: {
+    animationFrames: 24,
+    animationType: "shake",
+    glowColor: "#F8717140",
+    icon: "alert",
+    label: "Error",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  idle: {
     animationFrames: 1,
-    label: "Offline"
-  }
+    animationType: "none",
+    glowColor: "#8B5CF640",
+    icon: "cursor", // Cursor pointer icon
+    label: "Ready",
+    primaryColor: CURSOR.purple,
+    secondaryColor: "#7C3AED",
+  },
+  permission: {
+    animationFrames: 60,
+    animationType: "wave",
+    glowColor: "#F8717170",
+    icon: "shield",
+    label: "Approve?",
+    primaryColor: "#F87171",
+    secondaryColor: "#EF4444",
+  },
+  plan_prompt: {
+    animationFrames: 48,
+    animationType: "pulse",
+    glowColor: "#22D3EE60",
+    icon: "compass",
+    label: "Plan?",
+    primaryColor: "#22D3EE", // Cyan for plan mode
+    secondaryColor: "#06B6D4",
+  },
+  question: {
+    animationFrames: 48,
+    animationType: "pulse",
+    glowColor: "#FAF9F560",
+    icon: "help",
+    label: "Input",
+    primaryColor: CURSOR.cream,
+    secondaryColor: "#E8E7E3",
+  },
+  running: {
+    animationFrames: 96,
+    animationType: "orbit",
+    glowColor: "#A78BFA50",
+    icon: "loader",
+    label: "Running",
+    primaryColor: "#A78BFA",
+    secondaryColor: "#8B5CF6",
+  },
+  tool_use: {
+    animationFrames: 72,
+    animationType: "ripple",
+    glowColor: "#8B5CF650",
+    icon: "wrench",
+    label: "Tool",
+    primaryColor: CURSOR.purple,
+    secondaryColor: "#7C3AED",
+  },
 };
 
 // Helper to get state config based on source
-function getStateConfigs(source: InstanceSource = "claude"): Record<ClaudeState, StateConfig> {
+function getStateConfigs(
+  source: InstanceSource = "claude"
+): Record<ClaudeState, StateConfig> {
   switch (source) {
-    case "gemini":
+    case "gemini": {
       return GEMINI_STATE_CONFIGS;
-    case "cursor":
+    }
+    case "cursor": {
       return CURSOR_STATE_CONFIGS;
-    default:
+    }
+    default: {
       return CLAUDE_STATE_CONFIGS;
+    }
   }
 }
 
@@ -377,13 +390,13 @@ const LUCIDE_ICONS: Record<string, string> = {
     <path d="M6.3 20.3a2.4 2.4 0 0 0 3.4 0L12 18l-6-6-2.3 2.3a2.4 2.4 0 0 0 0 3.4Z"
           transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
     <path d="m12 6 6 6 2.3-2.3a2.4 2.4 0 0 0 0-3.4l-2.6-2.6a2.4 2.4 0 0 0-3.4 0Z"
-          transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`
+          transform="scale(2) translate(-12, -12)" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round" stroke-linejoin="round"/>`,
 };
 
 // Kitty status indicator colors
 const KITTY_STATUS = {
-  available: "#4ADE80",   // Green - Kitty is available
-  unavailable: "#F87171"  // Red - Kitty is not available
+  available: "#4ADE80", // Green - Kitty is available
+  unavailable: "#F87171", // Red - Kitty is not available
 };
 
 /**
@@ -403,9 +416,13 @@ export class IconGenerator {
   /**
    * Generate orbiting particles animation - calm, slow orbit
    */
-  private static generateOrbitParticles(frame: number, totalFrames: number, color: string): string {
+  private static generateOrbitParticles(
+    frame: number,
+    totalFrames: number,
+    color: string
+  ): string {
     const particles: string[] = [];
-    const numParticles = 3;  // Fewer particles
+    const numParticles = 3; // Fewer particles
     const orbitRadius = 42;
 
     for (let i = 0; i < numParticles; i++) {
@@ -416,35 +433,45 @@ export class IconGenerator {
       // Gentle size breathing
       const size = 3.5 + Math.sin(animProgress * Math.PI * 2 + i) * 0.5;
       // Stable opacity with gentle variation
-      const opacity = 0.5 + Math.sin(animProgress * Math.PI * 2 + i * 0.8) * 0.15;
+      const opacity =
+        0.5 + Math.sin(animProgress * Math.PI * 2 + i * 0.8) * 0.15;
 
       const x = Math.cos(angle) * orbitRadius;
       const y = Math.sin(angle) * orbitRadius;
 
-      particles.push(`<circle cx="${x}" cy="${y}" r="${size.toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`);
+      particles.push(
+        `<circle cx="${x}" cy="${y}" r="${size.toFixed(1)}" fill="${color}" opacity="${opacity.toFixed(2)}"/>`
+      );
     }
 
     // Soft glow ring behind particles
-    const glowOpacity = 0.08 + Math.sin((frame / totalFrames) * Math.PI * 2) * 0.04;
-    particles.unshift(`<circle cx="0" cy="0" r="${orbitRadius}" stroke="${color}" stroke-width="8" fill="none" opacity="${glowOpacity.toFixed(2)}"/>`);
+    const glowOpacity =
+      0.08 + Math.sin((frame / totalFrames) * Math.PI * 2) * 0.04;
+    particles.unshift(
+      `<circle cx="0" cy="0" r="${orbitRadius}" stroke="${color}" stroke-width="8" fill="none" opacity="${glowOpacity.toFixed(2)}"/>`
+    );
 
-    return particles.join('\n    ');
+    return particles.join("\n    ");
   }
 
   /**
    * Generate expanding ripple animation - slow, gentle waves
    */
-  private static generateRipples(frame: number, totalFrames: number, color: string): string {
+  private static generateRipples(
+    frame: number,
+    totalFrames: number,
+    color: string
+  ): string {
     const ripples: string[] = [];
-    const numRipples = 2;  // Fewer ripples
+    const numRipples = 2; // Fewer ripples
 
     for (let i = 0; i < numRipples; i++) {
       const offset = i / numRipples;
-      const progress = ((frame / totalFrames) + offset) % 1;
+      const progress = (frame / totalFrames + offset) % 1;
       const eased = this.easeInOutSine(progress);
 
       const radius = 25 + eased * 30;
-      const opacity = (1 - eased) * 0.25;  // More subtle
+      const opacity = (1 - eased) * 0.25; // More subtle
       const strokeWidth = 3 - eased * 2;
 
       if (opacity > 0.03) {
@@ -454,15 +481,19 @@ export class IconGenerator {
       }
     }
 
-    return ripples.join('\n    ');
+    return ripples.join("\n    ");
   }
 
   /**
    * Generate floating particles animation - gentle, slow rise
    */
-  private static generateFloatingParticles(frame: number, totalFrames: number, color: string): string {
+  private static generateFloatingParticles(
+    frame: number,
+    totalFrames: number,
+    color: string
+  ): string {
     const particles: string[] = [];
-    const numParticles = 4;  // Fewer particles
+    const numParticles = 4; // Fewer particles
 
     for (let i = 0; i < numParticles; i++) {
       const baseX = (i - numParticles / 2) * 18 + 9;
@@ -480,13 +511,17 @@ export class IconGenerator {
       }
     }
 
-    return particles.join('\n    ');
+    return particles.join("\n    ");
   }
 
   /**
    * Generate pulsing glow animation - soft breathing effect
    */
-  private static generatePulseGlow(frame: number, totalFrames: number, color: string): string {
+  private static generatePulseGlow(
+    frame: number,
+    totalFrames: number,
+    color: string
+  ): string {
     const progress = frame / totalFrames;
     const pulsePhase = Math.sin(progress * Math.PI * 2);
 
@@ -503,13 +538,19 @@ export class IconGenerator {
   /**
    * Generate wave animation for attention-seeking states - subtle pulse with soft ring
    */
-  private static generateWaveAnimation(frame: number, totalFrames: number, color: string): string {
+  private static generateWaveAnimation(
+    frame: number,
+    totalFrames: number,
+    color: string
+  ): string {
     const elements: string[] = [];
     const progress = frame / totalFrames;
 
     // Soft pulsing background glow
     const pulseIntensity = 0.15 + Math.sin(progress * Math.PI * 2) * 0.1;
-    elements.push(`<circle cx="0" cy="0" r="45" fill="${color}" opacity="${pulseIntensity.toFixed(2)}"/>`);
+    elements.push(
+      `<circle cx="0" cy="0" r="45" fill="${color}" opacity="${pulseIntensity.toFixed(2)}"/>`
+    );
 
     // Single soft expanding ring
     const ringProgress = progress;
@@ -522,7 +563,7 @@ export class IconGenerator {
         opacity="${ringOpacity.toFixed(2)}"/>`);
     }
 
-    return elements.join('\n    ');
+    return elements.join("\n    ");
   }
 
   /**
@@ -530,10 +571,15 @@ export class IconGenerator {
    * @param progress - 0-1 progress value
    * @param color - Ring color
    */
-  private static generateHoldProgressRing(progress: number, color: string): string {
-    if (progress <= 0) return '';
+  private static generateHoldProgressRing(
+    progress: number,
+    color: string
+  ): string {
+    if (progress <= 0) {
+      return "";
+    }
 
-    const radius = 52;  // Larger than icon, smaller than background
+    const radius = 52; // Larger than icon, smaller than background
     const strokeWidth = 4;
     const circumference = 2 * Math.PI * radius;
 
@@ -571,7 +617,10 @@ export class IconGenerator {
    * @param totalFrames - Total frames in the cycle
    * @returns Y offset in pixels
    */
-  private static generateFloatingOffset(frame: number, totalFrames: number): number {
+  private static generateFloatingOffset(
+    frame: number,
+    totalFrames: number
+  ): number {
     const progress = frame / totalFrames;
     // Smooth sine wave for gentle bobbing motion
     const floatPhase = Math.sin(progress * Math.PI * 2);
@@ -585,7 +634,10 @@ export class IconGenerator {
    * @param totalFrames - Total frames in the cycle
    * @returns X offset for transform
    */
-  private static generateShakeOffset(frame: number, totalFrames: number): number {
+  private static generateShakeOffset(
+    frame: number,
+    totalFrames: number
+  ): number {
     const progress = frame / totalFrames;
     // Quick oscillation that decays
     const intensity = Math.sin(progress * Math.PI * 6) * 3 * (1 - progress);
@@ -600,24 +652,52 @@ export class IconGenerator {
     frame: number
   ): string {
     switch (config.animationType) {
-      case 'orbit':
-        return this.generateOrbitParticles(frame, config.animationFrames, config.primaryColor);
-      case 'ripple':
-        return this.generateRipples(frame, config.animationFrames, config.primaryColor);
-      case 'float':
-        return this.generateFloatingParticles(frame, config.animationFrames, config.primaryColor);
-      case 'pulse':
-        return this.generatePulseGlow(frame, config.animationFrames, config.primaryColor);
-      case 'wave':
-        return this.generateWaveAnimation(frame, config.animationFrames, config.primaryColor);
-      case 'breathing':
+      case "orbit": {
+        return this.generateOrbitParticles(
+          frame,
+          config.animationFrames,
+          config.primaryColor
+        );
+      }
+      case "ripple": {
+        return this.generateRipples(
+          frame,
+          config.animationFrames,
+          config.primaryColor
+        );
+      }
+      case "float": {
+        return this.generateFloatingParticles(
+          frame,
+          config.animationFrames,
+          config.primaryColor
+        );
+      }
+      case "pulse": {
+        return this.generatePulseGlow(
+          frame,
+          config.animationFrames,
+          config.primaryColor
+        );
+      }
+      case "wave": {
+        return this.generateWaveAnimation(
+          frame,
+          config.animationFrames,
+          config.primaryColor
+        );
+      }
+      case "breathing": {
         // Breathing doesn't add animation elements - it scales the icon itself
-        return '';
-      case 'shake':
+        return "";
+      }
+      case "shake": {
         // Shake animation doesn't add elements, it modifies the icon transform
-        return '';
-      default:
-        return '';
+        return "";
+      }
+      default: {
+        return "";
+      }
     }
   }
 
@@ -629,46 +709,56 @@ export class IconGenerator {
    * @param source - Instance source ("claude" or "gemini") for color scheme
    * @param holdProgress - Optional hold progress (0-1) to show progress ring
    */
-  static generateFrame(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude", holdProgress?: number): string {
+  static generateFrame(
+    state: ClaudeState,
+    frame: number = 0,
+    kittyAvailable?: boolean,
+    source: InstanceSource = "claude",
+    holdProgress?: number
+  ): string {
     const stateConfigs = getStateConfigs(source);
     const config = stateConfigs[state];
     const iconPath = LUCIDE_ICONS[config.icon] || LUCIDE_ICONS.check;
 
     // Subtle rotation for animated states (loader only)
-    const rotation = state === 'running'
-      ? (frame / config.animationFrames) * 360
-      : 0;
+    const rotation =
+      state === "running" ? (frame / config.animationFrames) * 360 : 0;
 
     // Shake offset for error state
-    const shakeOffset = config.animationType === 'shake'
-      ? this.generateShakeOffset(frame, config.animationFrames)
-      : 0;
+    const shakeOffset =
+      config.animationType === "shake"
+        ? this.generateShakeOffset(frame, config.animationFrames)
+        : 0;
 
     // Floating offset for idle state (bobbing up and down)
-    const floatingOffset = config.animationType === 'breathing'
-      ? this.generateFloatingOffset(frame, config.animationFrames)
-      : 0;
+    const floatingOffset =
+      config.animationType === "breathing"
+        ? this.generateFloatingOffset(frame, config.animationFrames)
+        : 0;
 
     // Animation layers
     const animationLayer = this.generateAnimationLayer(config, frame);
 
     // Hold progress ring (when user is holding button)
-    const holdProgressRing = holdProgress !== undefined && holdProgress > 0
-      ? this.generateHoldProgressRing(holdProgress, config.primaryColor)
-      : '';
+    const holdProgressRing =
+      holdProgress !== undefined && holdProgress > 0
+        ? this.generateHoldProgressRing(holdProgress, config.primaryColor)
+        : "";
 
     // Ambient glow for static states (none and breathing which only scales the icon)
-    const ambientGlow = (config.animationType === 'none' || config.animationType === 'breathing')
-      ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>`
-      : '';
+    const ambientGlow =
+      config.animationType === "none" || config.animationType === "breathing"
+        ? `<circle cx="0" cy="0" r="40" fill="${config.glowColor}"/>`
+        : "";
 
     // Kitty status indicator (bottom-left corner) - only show if kittyAvailable is defined
-    const kittyIndicator = kittyAvailable !== undefined
-      ? `<!-- Kitty status indicator -->
+    const kittyIndicator =
+      kittyAvailable === undefined
+        ? ""
+        : `<!-- Kitty status indicator -->
   <circle cx="26" cy="122" r="8" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}" opacity="0.9"/>
   <circle cx="26" cy="122" r="5" fill="${ANTHROPIC.black}"/>
-  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`
-      : '';
+  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`;
 
     return `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -726,7 +816,7 @@ export class IconGenerator {
    * Check if a state should be animated
    */
   static isAnimated(state: ClaudeState): boolean {
-    return STATE_CONFIGS[state].animationType !== 'none';
+    return STATE_CONFIGS[state].animationType !== "none";
   }
 
   /**
@@ -751,8 +841,20 @@ export class IconGenerator {
    * @param source - Instance source ("claude" or "gemini") for color scheme
    * @param holdProgress - Optional hold progress (0-1) to show progress ring
    */
-  static generateDataUrl(state: ClaudeState, frame: number = 0, kittyAvailable?: boolean, source: InstanceSource = "claude", holdProgress?: number): string {
-    const svg = this.generateFrame(state, frame, kittyAvailable, source, holdProgress);
+  static generateDataUrl(
+    state: ClaudeState,
+    frame: number = 0,
+    kittyAvailable?: boolean,
+    source: InstanceSource = "claude",
+    holdProgress?: number
+  ): string {
+    const svg = this.generateFrame(
+      state,
+      frame,
+      kittyAvailable,
+      source,
+      holdProgress
+    );
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
 
@@ -775,7 +877,15 @@ export class IconGenerator {
     source: InstanceSource = "claude",
     holdProgress?: number
   ): string {
-    const svg = this.generateTransitionFrame(fromState, toState, progress, frame, kittyAvailable, source, holdProgress);
+    const svg = this.generateTransitionFrame(
+      fromState,
+      toState,
+      progress,
+      frame,
+      kittyAvailable,
+      source,
+      holdProgress
+    );
     return `data:image/svg+xml,${encodeURIComponent(svg)}`;
   }
 
@@ -807,20 +917,23 @@ export class IconGenerator {
     const indicatorColor = toConfig.primaryColor;
 
     // Blend colors for transition effect
-    const blendedGlowColor = progress < 0.5 ? fromConfig.glowColor : toConfig.glowColor;
+    const blendedGlowColor =
+      progress < 0.5 ? fromConfig.glowColor : toConfig.glowColor;
 
     // Hold progress ring
-    const holdProgressRing = holdProgress !== undefined && holdProgress > 0
-      ? this.generateHoldProgressRing(holdProgress, toConfig.primaryColor)
-      : '';
+    const holdProgressRing =
+      holdProgress !== undefined && holdProgress > 0
+        ? this.generateHoldProgressRing(holdProgress, toConfig.primaryColor)
+        : "";
 
     // Kitty status indicator
-    const kittyIndicator = kittyAvailable !== undefined
-      ? `<!-- Kitty status indicator -->
+    const kittyIndicator =
+      kittyAvailable === undefined
+        ? ""
+        : `<!-- Kitty status indicator -->
   <circle cx="26" cy="122" r="8" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}" opacity="0.9"/>
   <circle cx="26" cy="122" r="5" fill="${ANTHROPIC.black}"/>
-  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`
-      : '';
+  <circle cx="26" cy="122" r="3" fill="${kittyAvailable ? KITTY_STATUS.available : KITTY_STATUS.unavailable}"/>`;
 
     return `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
   <defs>
@@ -876,8 +989,8 @@ export class IconGenerator {
     if (tokens >= 1_000_000) {
       return `${(tokens / 1_000_000).toFixed(1)}M`;
     }
-    if (tokens >= 1_000) {
-      return `${(tokens / 1_000).toFixed(1)}k`;
+    if (tokens >= 1000) {
+      return `${(tokens / 1000).toFixed(1)}k`;
     }
     return tokens.toString();
   }
@@ -888,7 +1001,11 @@ export class IconGenerator {
    * @param state - Current Claude state (for status indicator color)
    * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateTokenDisplay(tokens: number, state: ClaudeState, source: InstanceSource = "claude"): string {
+  static generateTokenDisplay(
+    tokens: number,
+    state: ClaudeState,
+    source: InstanceSource = "claude"
+  ): string {
     const stateConfigs = getStateConfigs(source);
     const config = stateConfigs[state];
     const tokenText = this.formatTokens(tokens);
@@ -925,10 +1042,15 @@ export class IconGenerator {
    * @param state - Current Claude state (for status indicator color)
    * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateCostDisplay(cost: number, state: ClaudeState, source: InstanceSource = "claude"): string {
+  static generateCostDisplay(
+    cost: number,
+    state: ClaudeState,
+    source: InstanceSource = "claude"
+  ): string {
     const stateConfigs = getStateConfigs(source);
     const config = stateConfigs[state];
-    const costText = cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
+    const costText =
+      cost < 0.01 ? `$${cost.toFixed(4)}` : `$${cost.toFixed(2)}`;
     const textColor = "#4ADE80"; // Green for cost
 
     const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
@@ -959,29 +1081,36 @@ export class IconGenerator {
   /**
    * Get activity icon and color based on tool name
    */
-  private static getActivityStyle(toolName: string): { icon: string; color: string } {
+  private static getActivityStyle(toolName: string): {
+    icon: string;
+    color: string;
+  } {
     const toolLower = toolName.toLowerCase();
 
     if (toolLower.includes("edit") || toolLower.includes("write")) {
-      return { icon: "E", color: "#A78BFA" }; // Purple for edit
+      return { color: "#A78BFA", icon: "E" }; // Purple for edit
     }
     if (toolLower.includes("bash") || toolLower.includes("shell")) {
-      return { icon: ">", color: "#60A5FA" }; // Blue for bash
+      return { color: "#60A5FA", icon: ">" }; // Blue for bash
     }
-    if (toolLower.includes("read") || toolLower.includes("glob") || toolLower.includes("grep")) {
-      return { icon: "S", color: "#F59E0B" }; // Amber for search/read
+    if (
+      toolLower.includes("read") ||
+      toolLower.includes("glob") ||
+      toolLower.includes("grep")
+    ) {
+      return { color: "#F59E0B", icon: "S" }; // Amber for search/read
     }
     if (toolLower.includes("web") || toolLower.includes("fetch")) {
-      return { icon: "W", color: "#14B8A6" }; // Teal for web
+      return { color: "#14B8A6", icon: "W" }; // Teal for web
     }
     if (toolLower.includes("task") || toolLower.includes("agent")) {
-      return { icon: "A", color: "#EC4899" }; // Pink for agent
+      return { color: "#EC4899", icon: "A" }; // Pink for agent
     }
     if (toolLower.includes("todo")) {
-      return { icon: "T", color: "#06B6D4" }; // Cyan for todo
+      return { color: "#06B6D4", icon: "T" }; // Cyan for todo
     }
 
-    return { icon: "?", color: ANTHROPIC.gray }; // Default
+    return { color: ANTHROPIC.gray, icon: "?" }; // Default
   }
 
   /**
@@ -990,13 +1119,18 @@ export class IconGenerator {
    * @param state - Current Claude state (for status indicator color)
    * @param source - Instance source ("claude" or "gemini") for color scheme
    */
-  static generateActivityDisplay(toolName: string, state: ClaudeState, source: InstanceSource = "claude"): string {
+  static generateActivityDisplay(
+    toolName: string,
+    state: ClaudeState,
+    source: InstanceSource = "claude"
+  ): string {
     const stateConfigs = getStateConfigs(source);
     const config = stateConfigs[state];
     const { icon, color } = this.getActivityStyle(toolName);
 
     // Truncate tool name if too long
-    const displayName = toolName.length > 10 ? toolName.substring(0, 9) + "…" : toolName;
+    const displayName =
+      toolName.length > 10 ? `${toolName.substring(0, 9)}…` : toolName;
 
     const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->

@@ -3,8 +3,8 @@
  * Uses AppleScript to show native macOS folder picker dialog
  */
 
-import { exec } from "child_process";
-import { promisify } from "util";
+import { exec } from "node:child_process";
+import { promisify } from "node:util";
 
 const execAsync = promisify(exec);
 
@@ -29,12 +29,15 @@ export async function pickFolder(): Promise<string | null> {
 
     // Remove trailing slash if present for consistency
     return folderPath.endsWith("/") ? folderPath.slice(0, -1) : folderPath;
-  } catch (err) {
+  } catch (error) {
     // User cancelled or error occurred
-    const errorMessage = err instanceof Error ? err.message : String(err);
+    const errorMessage = error instanceof Error ? error.message : String(error);
 
     // AppleScript returns error code -128 when user cancels
-    if (errorMessage.includes("-128") || errorMessage.includes("User canceled")) {
+    if (
+      errorMessage.includes("-128") ||
+      errorMessage.includes("User canceled")
+    ) {
       return null;
     }
 
@@ -48,7 +51,9 @@ export async function pickFolder(): Promise<string | null> {
  */
 export async function validateFolder(folderPath: string): Promise<boolean> {
   try {
-    const { stdout } = await execAsync(`test -d "${folderPath}" && echo "valid"`);
+    const { stdout } = await execAsync(
+      `test -d "${folderPath}" && echo "valid"`
+    );
     return stdout.trim() === "valid";
   } catch {
     return false;

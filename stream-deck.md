@@ -4,11 +4,7 @@
 
 # Stream Deck SDK
 
-[![SDK documentation](https://img.shields.io/badge/Documentation-2ea043?labelColor=grey&logo=gitbook&logoColor=white)](https://docs.elgato.com/sdk)
-[![Elgato homepage](https://img.shields.io/badge/Elgato-3431cf?labelColor=grey&logo=elgato)](https://elgato.com)
-[![Join the Marketplace Makers Discord](https://img.shields.io/badge/Marketplace%20Makers-5662f6?labelColor=grey&logo=discord&logoColor=white)](https://discord.gg/GehBUcu627)
-[![Stream Deck npm package](https://img.shields.io/npm/v/%40elgato/streamdeck?logo=npm&logoColor=white)](https://www.npmjs.com/package/@elgato/streamdeck)
-[![Build status](https://img.shields.io/github/actions/workflow/status/elgatosf/streamdeck/build.yml?branch=main&label=Build&logo=GitHub)](https://github.com/elgatosf/streamdeck/actions)
+[![SDK documentation](https://img.shields.io/badge/Documentation-2ea043?labelColor=grey&logo=gitbook&logoColor=white)](https://docs.elgato.com/sdk) [![Elgato homepage](https://img.shields.io/badge/Elgato-3431cf?labelColor=grey&logo=elgato)](https://elgato.com) [![Join the Marketplace Makers Discord](https://img.shields.io/badge/Marketplace%20Makers-5662f6?labelColor=grey&logo=discord&logoColor=white)](https://discord.gg/GehBUcu627) [![Stream Deck npm package](https://img.shields.io/npm/v/%40elgato/streamdeck?logo=npm&logoColor=white)](https://www.npmjs.com/package/@elgato/streamdeck) [![Build status](https://img.shields.io/github/actions/workflow/status/elgatosf/streamdeck/build.yml?branch=main&label=Build&logo=GitHub)](https://github.com/elgatosf/streamdeck/actions)
 
 </div>
 
@@ -74,13 +70,13 @@ import { action, KeyDownEvent, SingletonAction } from "@elgato/streamdeck";
 
 @action({ UUID: "com.elgato.hello-world.say-hello" })
 export class SayHelloAction extends SingletonAction {
-    /**
-     * Listen for the key down event that occurs when a user presses
-     * a Stream Deck button, and change the title of the action.
-     */
-    async onKeyDown(ev: KeyDownEvent) {
-        await ev.action.setTitle("Hello world");
-    }
+  /**
+   * Listen for the key down event that occurs when a user presses
+   * a Stream Deck button, and change the title of the action.
+   */
+  async onKeyDown(ev: KeyDownEvent) {
+    await ev.action.setTitle("Hello world");
+  }
 }
 ```
 

@@ -1,6 +1,7 @@
-import { EventEmitter } from "events";
-import type { UsageStats } from "./types";
+import { EventEmitter } from "node:events";
+
 import { LogScanner } from "./log-scanner";
+import type { UsageStats } from "./types";
 
 /**
  * Model pricing in USD per million tokens
@@ -13,11 +14,16 @@ interface ModelPricing {
 }
 
 const MODEL_PRICING: Record<string, ModelPricing> = {
-  "claude-opus-4": { input: 15, output: 75, cacheRead: 1.5, cacheWrite: 18.75 },
-  "claude-sonnet-4": { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
-  "claude-haiku-4": { input: 0.25, output: 1.25, cacheRead: 0.025, cacheWrite: 0.3125 },
+  "claude-opus-4": { cacheRead: 1.5, cacheWrite: 18.75, input: 15, output: 75 },
+  "claude-sonnet-4": { cacheRead: 0.3, cacheWrite: 3.75, input: 3, output: 15 },
+  "claude-haiku-4": {
+    cacheRead: 0.025,
+    cacheWrite: 0.3125,
+    input: 0.25,
+    output: 1.25,
+  },
   // Legacy/default pricing (Sonnet rates)
-  default: { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 },
+  default: { cacheRead: 0.3, cacheWrite: 3.75, input: 3, output: 15 },
 };
 
 /**
@@ -41,7 +47,8 @@ function calculateCost(usage: UsageStats): number {
   const inputCost = (usage.inputTokens / 1_000_000) * pricing.input;
   const outputCost = (usage.outputTokens / 1_000_000) * pricing.output;
   const cacheReadCost = (usage.cacheReadTokens / 1_000_000) * pricing.cacheRead;
-  const cacheWriteCost = (usage.cacheWriteTokens / 1_000_000) * pricing.cacheWrite;
+  const cacheWriteCost =
+    (usage.cacheWriteTokens / 1_000_000) * pricing.cacheWrite;
 
   return inputCost + outputCost + cacheReadCost + cacheWriteCost;
 }
@@ -50,9 +57,9 @@ function calculateCost(usage: UsageStats): number {
  * Tracks token usage and costs per session
  */
 export class UsageTracker extends EventEmitter {
-  private usageBySession: Map<string, UsageStats> = new Map();
+  private usageBySession = new Map<string, UsageStats>();
   private logScanner: LogScanner;
-  private cwdBySession: Map<string, string> = new Map();
+  private cwdBySession = new Map<string, string>();
 
   constructor() {
     super();
@@ -61,7 +68,16 @@ export class UsageTracker extends EventEmitter {
     // Listen for incremental usage updates from log scanner
     this.logScanner.on(
       "usage",
-      (sessionId: string, usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; model: string }) => {
+      (
+        sessionId: string,
+        usage: {
+          inputTokens: number;
+          outputTokens: number;
+          cacheReadTokens: number;
+          cacheWriteTokens: number;
+          model: string;
+        }
+      ) => {
         this.addUsage(sessionId, usage);
       }
     );
@@ -82,13 +98,13 @@ export class UsageTracker extends EventEmitter {
     } else {
       // Initialize empty usage
       this.usageBySession.set(sessionId, {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
-        totalCost: 0,
-        model: "",
+        inputTokens: 0,
         lastUpdate: Date.now(),
+        model: "",
+        outputTokens: 0,
+        totalCost: 0,
       });
     }
 
@@ -110,16 +126,22 @@ export class UsageTracker extends EventEmitter {
    */
   private addUsage(
     sessionId: string,
-    usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; cacheWriteTokens: number; model: string }
+    usage: {
+      inputTokens: number;
+      outputTokens: number;
+      cacheReadTokens: number;
+      cacheWriteTokens: number;
+      model: string;
+    }
   ): void {
     const current = this.usageBySession.get(sessionId) || {
-      inputTokens: 0,
-      outputTokens: 0,
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
-      totalCost: 0,
-      model: "",
+      inputTokens: 0,
       lastUpdate: Date.now(),
+      model: "",
+      outputTokens: 0,
+      totalCost: 0,
     };
 
     current.inputTokens += usage.inputTokens;
@@ -172,8 +194,8 @@ export function formatTokenCount(tokens: number): string {
   if (tokens >= 1_000_000) {
     return `${(tokens / 1_000_000).toFixed(1)}M`;
   }
-  if (tokens >= 1_000) {
-    return `${(tokens / 1_000).toFixed(1)}k`;
+  if (tokens >= 1000) {
+    return `${(tokens / 1000).toFixed(1)}k`;
   }
   return tokens.toString();
 }

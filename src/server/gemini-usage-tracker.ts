@@ -1,6 +1,7 @@
-import { EventEmitter } from "events";
-import type { UsageStats } from "./types";
+import { EventEmitter } from "node:events";
+
 import { GeminiLogScanner } from "./gemini-log-scanner";
+import type { UsageStats } from "./types";
 
 /**
  * Gemini model pricing in USD per million tokens
@@ -14,16 +15,16 @@ interface ModelPricing {
 
 const MODEL_PRICING: Record<string, ModelPricing> = {
   // Gemini 2.0 Flash
-  "gemini-2.0-flash": { input: 0.10, output: 0.40, cacheRead: 0.025 },
-  "gemini-2.0-flash-lite": { input: 0.075, output: 0.30, cacheRead: 0.01875 },
+  "gemini-2.0-flash": { cacheRead: 0.025, input: 0.1, output: 0.4 },
+  "gemini-2.0-flash-lite": { cacheRead: 0.01875, input: 0.075, output: 0.3 },
   // Gemini 2.0 Pro (experimental, may not have pricing yet)
-  "gemini-2.0-pro": { input: 1.25, output: 5.0, cacheRead: 0.3125 },
+  "gemini-2.0-pro": { cacheRead: 0.3125, input: 1.25, output: 5.0 },
   // Gemini 1.5 models
-  "gemini-1.5-flash": { input: 0.075, output: 0.30, cacheRead: 0.01875 },
-  "gemini-1.5-flash-8b": { input: 0.0375, output: 0.15, cacheRead: 0.01 },
-  "gemini-1.5-pro": { input: 1.25, output: 5.0, cacheRead: 0.3125 },
+  "gemini-1.5-flash": { cacheRead: 0.01875, input: 0.075, output: 0.3 },
+  "gemini-1.5-flash-8b": { cacheRead: 0.01, input: 0.0375, output: 0.15 },
+  "gemini-1.5-pro": { cacheRead: 0.3125, input: 1.25, output: 5.0 },
   // Default pricing (Flash rates)
-  default: { input: 0.10, output: 0.40, cacheRead: 0.025 },
+  default: { cacheRead: 0.025, input: 0.1, output: 0.4 },
 };
 
 /**
@@ -58,9 +59,9 @@ function calculateCost(usage: UsageStats): number {
  * Tracks token usage and costs per Gemini session
  */
 export class GeminiUsageTracker extends EventEmitter {
-  private usageBySession: Map<string, UsageStats> = new Map();
+  private usageBySession = new Map<string, UsageStats>();
   private logScanner: GeminiLogScanner;
-  private cwdBySession: Map<string, string> = new Map();
+  private cwdBySession = new Map<string, string>();
 
   constructor() {
     super();
@@ -69,7 +70,15 @@ export class GeminiUsageTracker extends EventEmitter {
     // Listen for incremental usage updates from log scanner
     this.logScanner.on(
       "usage",
-      (sessionId: string, usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; model: string }) => {
+      (
+        sessionId: string,
+        usage: {
+          inputTokens: number;
+          outputTokens: number;
+          cacheReadTokens: number;
+          model: string;
+        }
+      ) => {
         this.addUsage(sessionId, usage);
       }
     );
@@ -90,13 +99,13 @@ export class GeminiUsageTracker extends EventEmitter {
     } else {
       // Initialize empty usage
       this.usageBySession.set(sessionId, {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
-        totalCost: 0,
-        model: "",
+        inputTokens: 0,
         lastUpdate: Date.now(),
+        model: "",
+        outputTokens: 0,
+        totalCost: 0,
       });
     }
 
@@ -118,16 +127,21 @@ export class GeminiUsageTracker extends EventEmitter {
    */
   private addUsage(
     sessionId: string,
-    usage: { inputTokens: number; outputTokens: number; cacheReadTokens: number; model: string }
+    usage: {
+      inputTokens: number;
+      outputTokens: number;
+      cacheReadTokens: number;
+      model: string;
+    }
   ): void {
     const current = this.usageBySession.get(sessionId) || {
-      inputTokens: 0,
-      outputTokens: 0,
       cacheReadTokens: 0,
       cacheWriteTokens: 0,
-      totalCost: 0,
-      model: "",
+      inputTokens: 0,
       lastUpdate: Date.now(),
+      model: "",
+      outputTokens: 0,
+      totalCost: 0,
     };
 
     current.inputTokens += usage.inputTokens;

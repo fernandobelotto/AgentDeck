@@ -4,7 +4,8 @@
  */
 
 import streamDeck from "@elgato/streamdeck";
-const logger = streamDeck.logger;
+
+const { logger } = streamDeck;
 
 import {
   focusClaudeWindow,
@@ -17,8 +18,8 @@ import {
   launchCursorWindow,
   isKittyAvailable,
   lastLaunchError,
-  type AgentType
 } from "./kitty-remote.js";
+import type { AgentType } from "./kitty-remote.js";
 
 /**
  * Focus a terminal window running a CLI agent
@@ -71,11 +72,15 @@ export async function sendApproveSignal(
   cwd?: string,
   agentType: AgentType = "Claude"
 ): Promise<void> {
-  logger.info(`[TerminalFocus] sendApproveSignal called - sessionId: ${sessionId}, cwd: ${cwd}, agent: ${agentType}`);
+  logger.info(
+    `[TerminalFocus] sendApproveSignal called - sessionId: ${sessionId}, cwd: ${cwd}, agent: ${agentType}`
+  );
   const success = await sendAgentApproveSignal(agentType, sessionId, cwd);
   logger.info(`[TerminalFocus] sendApproveSignal result: ${success}`);
   if (!success) {
-    logger.warn(`[TerminalFocus] Approve signal failed for ${agentType} session: ${sessionId}`);
+    logger.warn(
+      `[TerminalFocus] Approve signal failed for ${agentType} session: ${sessionId}`
+    );
   }
 }
 
@@ -96,9 +101,9 @@ export async function openTerminalWithClaude(
     }
     // Include detailed error from lastLaunchError
     const detailedError = lastLaunchError || "unknown error";
-    return { success: false, windowId: null, error: detailedError };
-  } catch (err) {
-    return { success: false, windowId: null, error: String(err) };
+    return { error: detailedError, success: false, windowId: null };
+  } catch (error) {
+    return { success: false, windowId: null, error: String(error) };
   }
 }
 
@@ -119,9 +124,9 @@ export async function openTerminalWithGemini(
     }
     // Include detailed error from lastLaunchError
     const detailedError = lastLaunchError || "unknown error";
-    return { success: false, windowId: null, error: detailedError };
-  } catch (err) {
-    return { success: false, windowId: null, error: String(err) };
+    return { error: detailedError, success: false, windowId: null };
+  } catch (error) {
+    return { success: false, windowId: null, error: String(error) };
   }
 }
 
@@ -142,9 +147,9 @@ export async function openTerminalWithCursor(
     }
     // Include detailed error from lastLaunchError
     const detailedError = lastLaunchError || "unknown error";
-    return { success: false, windowId: null, error: detailedError };
-  } catch (err) {
-    return { success: false, windowId: null, error: String(err) };
+    return { error: detailedError, success: false, windowId: null };
+  } catch (error) {
+    return { success: false, windowId: null, error: String(error) };
   }
 }
 

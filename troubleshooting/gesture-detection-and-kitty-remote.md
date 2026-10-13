@@ -11,9 +11,11 @@ The Stream Deck button gestures (single press, double press, hold) were partiall
 ## Issue 1: Metadata Not Being Updated
 
 ### Symptom
+
 Logs showed `Instance cwd: undefined` even though the server had the correct `cwd` data.
 
 ### Root Cause
+
 In `claude-instance-action.ts`, the `handleWebSocketMessage` function was only updating `knownInstances` on `"init"` messages, not on `"update"` messages:
 
 ```typescript
@@ -25,6 +27,7 @@ In `claude-instance-action.ts`, the `handleWebSocketMessage` function was only u
 ```
 
 ### Fix
+
 Update `knownInstances` on every `"update"` message to preserve metadata:
 
 ```typescript
@@ -48,9 +51,11 @@ Update `knownInstances` on every `"update"` message to preserve metadata:
 ## Issue 2: Wrong Window Matching Priority
 
 ### Symptom
+
 `kittySendApprove` returned `true` but the Enter key was sent to the wrong window.
 
 ### Root Cause
+
 In `kitty-remote.ts`, `findClaudeWindow` matched by `cwd` first, then by session ID in title. However:
 
 - The Kitty window's `cwd` reflects the **shell's current directory**
@@ -58,19 +63,21 @@ In `kitty-remote.ts`, `findClaudeWindow` matched by `cwd` first, then by session
 - These can differ if the shell has `cd`'d elsewhere
 
 Example from `kitten @ ls`:
+
 ```
 Window id: 38  title: "Claude:b84172df:ClaudeDeck - Permission Required"  cwd: "/Users/.../MacHue"  <-- Different!
 Window id: 41  title: "Claude:c918d1b6:MacHue"  cwd: "/Users/.../ClaudeDeck"
 ```
 
 ### Fix
+
 Changed matching priority to use session ID in title first (set by hooks):
 
 ```typescript
 // Priority 1: Match by title containing "Claude:[sessionId]" (most reliable)
 if (sessionId) {
   const shortSession = sessionId.substring(0, 8);
-  const titleMatch = allWindows.find(w =>
+  const titleMatch = allWindows.find((w) =>
     w.title.includes(`Claude:${shortSession}`)
   );
   if (titleMatch) return titleMatch;
@@ -85,12 +92,15 @@ if (sessionId) {
 ## Issue 3: Wrong Key Sending Method
 
 ### Symptom
+
 Window was found correctly, command succeeded, but permission wasn't approved.
 
 ### Root Cause
+
 Used `send-text "\n"` which sends a newline character. TUI applications like Claude Code need actual **key events**, not text input.
 
 ### Fix
+
 Use `send-key` command instead of `send-text`:
 
 ```typescript
@@ -102,6 +112,7 @@ return sendKey("enter", { id: window.id }, options);
 ```
 
 Also updated cancel signal:
+
 ```typescript
 // Before
 return sendText("\x03", { id: window.id }, options);
@@ -115,9 +126,11 @@ return sendKey("ctrl+c", { id: window.id }, options);
 ## Issue 4: Single Press Always Launching New Window
 
 ### Symptom
+
 Single press launched a new Claude window instead of focusing the existing one.
 
 ### Root Cause
+
 When `projectFolder` was configured, it always launched a new window, ignoring the attached session:
 
 ```typescript
@@ -132,6 +145,7 @@ if (sessionId) {
 ```
 
 ### Fix
+
 Check for attached session first:
 
 ```typescript
@@ -154,16 +168,19 @@ if (projectFolder) {
 ## Debugging Tips
 
 ### View Plugin Logs
+
 ```bash
 cat ~/Library/Application\ Support/com.elgato.StreamDeck/Plugins/com.agentdeck.plugin.sdPlugin/logs/com.agentdeck.plugin.0.log | tail -50
 ```
 
 ### Check Server Data
+
 ```bash
 curl -s http://127.0.0.1:19847/instances | jq '.'
 ```
 
 ### List Kitty Windows
+
 ```bash
 # Find socket first
 ls /tmp/kitty*
@@ -173,6 +190,7 @@ kitten @ --to unix:/tmp/kitty-XXXXX ls | jq '[.[] | .tabs[] | .windows[] | {id, 
 ```
 
 ### Test Key Sending Manually
+
 ```bash
 # Send Enter to specific window
 kitten @ --to unix:/tmp/kitty-XXXXX send-key --match id:38 enter
