@@ -188,11 +188,11 @@ export class LogScanner extends EventEmitter {
       const lines = newContent.split("\n").filter((line) => line.trim());
 
       const totalUsage: ParsedUsage = {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
+        inputTokens: 0,
         model: "",
+        outputTokens: 0,
       };
 
       for (const line of lines) {
@@ -274,13 +274,13 @@ export class LogScanner extends EventEmitter {
       const lines = content.split("\n").filter((line) => line.trim());
 
       const totalUsage: UsageStats = {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
-        totalCost: 0,
-        model: "",
+        inputTokens: 0,
         lastUpdate: Date.now(),
+        model: "",
+        outputTokens: 0,
+        totalCost: 0,
       };
 
       for (const line of lines) {

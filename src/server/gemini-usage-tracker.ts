@@ -18,11 +18,11 @@ const MODEL_PRICING: Record<string, ModelPricing> = {
   "gemini-2.0-flash": { cacheRead: 0.025, input: 0.1, output: 0.4 },
   "gemini-2.0-flash-lite": { cacheRead: 0.01875, input: 0.075, output: 0.3 },
   // Gemini 2.0 Pro (experimental, may not have pricing yet)
-  "gemini-2.0-pro": { cacheRead: 0.3125, input: 1.25, output: 5.0 },
+  "gemini-2.0-pro": { cacheRead: 0.3125, input: 1.25, output: 5 },
   // Gemini 1.5 models
   "gemini-1.5-flash": { cacheRead: 0.01875, input: 0.075, output: 0.3 },
   "gemini-1.5-flash-8b": { cacheRead: 0.01, input: 0.0375, output: 0.15 },
-  "gemini-1.5-pro": { cacheRead: 0.3125, input: 1.25, output: 5.0 },
+  "gemini-1.5-pro": { cacheRead: 0.3125, input: 1.25, output: 5 },
   // Default pricing (Flash rates)
   default: { cacheRead: 0.025, input: 0.1, output: 0.4 },
 };

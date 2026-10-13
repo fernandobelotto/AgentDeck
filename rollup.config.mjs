@@ -28,13 +28,13 @@ export default {
   },
   plugins: [
     typescript({
-      tsconfig: "./tsconfig.json",
       compilerOptions: {
         declaration: false,
         declarationMap: false,
         module: "ESNext",
         moduleResolution: "bundler",
       },
+      tsconfig: "./tsconfig.json",
     }),
     nodeResolve({
       preferBuiltins: true,

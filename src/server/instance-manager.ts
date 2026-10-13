@@ -78,12 +78,12 @@ export class InstanceManager {
     }
 
     const instance: ClaudeInstance = {
-      sessionId: update.session_id,
-      state: effectiveState,
-      metadata: update.metadata,
       lastUpdate: Date.now(),
+      metadata: update.metadata,
       name: existing?.name,
+      sessionId: update.session_id,
       source: update.source ?? "claude", // default to claude for backward compatibility
+      state: effectiveState,
     };
 
     this.instances.set(update.session_id, instance);

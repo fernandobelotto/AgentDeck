@@ -103,7 +103,7 @@ export async function openTerminalWithClaude(
     const detailedError = lastLaunchError || "unknown error";
     return { error: detailedError, success: false, windowId: null };
   } catch (error) {
-    return { success: false, windowId: null, error: String(error) };
+    return { error: String(error), success: false, windowId: null };
   }
 }
 
@@ -126,7 +126,7 @@ export async function openTerminalWithGemini(
     const detailedError = lastLaunchError || "unknown error";
     return { error: detailedError, success: false, windowId: null };
   } catch (error) {
-    return { success: false, windowId: null, error: String(error) };
+    return { error: String(error), success: false, windowId: null };
   }
 }
 
@@ -149,7 +149,7 @@ export async function openTerminalWithCursor(
     const detailedError = lastLaunchError || "unknown error";
     return { error: detailedError, success: false, windowId: null };
   } catch (error) {
-    return { success: false, windowId: null, error: String(error) };
+    return { error: String(error), success: false, windowId: null };
   }
 }
 

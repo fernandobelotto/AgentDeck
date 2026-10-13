@@ -1130,7 +1130,7 @@ export class IconGenerator {
 
     // Truncate tool name if too long
     const displayName =
-      toolName.length > 10 ? `${toolName.substring(0, 9)}…` : toolName;
+      toolName.length > 10 ? `${toolName.slice(0, 9)}…` : toolName;
 
     const svg = `<svg width="${this.SIZE}" height="${this.SIZE}" viewBox="0 0 ${this.SIZE} ${this.SIZE}" xmlns="http://www.w3.org/2000/svg">
   <!-- Background -->

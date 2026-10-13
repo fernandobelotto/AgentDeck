@@ -228,7 +228,8 @@ async function execKittenCommand(
       throw new Error(`Kitty command timed out: ${command}`, { cause: error });
     }
     throw new Error(
-      `Kitty command failed: ${command} - ${err.message || error}`
+      `Kitty command failed: ${command} - ${err.message || error}`,
+      { cause: error }
     );
   }
 }

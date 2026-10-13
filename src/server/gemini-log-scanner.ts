@@ -259,10 +259,10 @@ export class GeminiLogScanner extends EventEmitter {
       const newMessages = record.messages.slice(state.lastParsedMessageCount);
 
       const totalUsage: ParsedUsage = {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
+        inputTokens: 0,
         model: "",
+        outputTokens: 0,
       };
 
       for (const message of newMessages) {
