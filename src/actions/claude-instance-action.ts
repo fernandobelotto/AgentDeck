@@ -1,22 +1,18 @@
-import streamDeck, {
+import type {
   KeyDownEvent,
   KeyUpEvent,
   WillAppearEvent,
   WillDisappearEvent,
   DidReceiveSettingsEvent,
-  SingletonAction,
-  Action
+  Action,
 } from "@elgato/streamdeck";
+import streamDeck, { SingletonAction } from "@elgato/streamdeck";
 
-const logger = streamDeck.logger;
+const { logger } = streamDeck;
 import { WebSocket } from "ws";
 
-import { InteractionHandler, setInteractionLogger } from "../utils/interaction-handler.js";
 import { AnimationController } from "../icons/animation-controller.js";
 import { IconGenerator } from "../icons/icon-generator.js";
-import { focusTerminal, sendCancelSignal, sendApproveSignal, openTerminalWithClaude } from "../utils/terminal-focus.js";
-import { isKittyAvailable, launchKittyWithRemoteControl } from "../utils/kitty-remote.js";
-import { formatTokenCount, formatCost } from "../server/usage-tracker.js";
 import type {
   ClaudeInstanceSettings,
   ClaudeState,
@@ -24,8 +20,23 @@ import type {
   ClaudeInstance,
   CommandMessage,
   UsageStats,
-  DisplayMode
+  DisplayMode,
 } from "../server/types.js";
+import { formatTokenCount, formatCost } from "../server/usage-tracker.js";
+import {
+  InteractionHandler,
+  setInteractionLogger,
+} from "../utils/interaction-handler.js";
+import {
+  isKittyAvailable,
+  launchKittyWithRemoteControl,
+} from "../utils/kitty-remote.js";
+import {
+  focusTerminal,
+  sendCancelSignal,
+  sendApproveSignal,
+  openTerminalWithClaude,
+} from "../utils/terminal-focus.js";
 
 const WS_URL = "ws://127.0.0.1:19847";
 const WS_RECONNECT_DELAY = 5000;
@@ -57,22 +68,22 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   private reconnectTimer: NodeJS.Timeout | null = null;
 
   /** Interaction handlers for each action context */
-  private interactionHandlers: Map<string, InteractionHandler> = new Map();
+  private interactionHandlers = new Map<string, InteractionHandler>();
 
   /** Animation controllers for each action context */
-  private animationControllers: Map<string, AnimationController> = new Map();
+  private animationControllers = new Map<string, AnimationController>();
 
   /** Current state of each Claude Code instance */
-  private instanceStates: Map<string, ClaudeState> = new Map();
+  private instanceStates = new Map<string, ClaudeState>();
 
   /** Usage stats for each Claude Code instance */
-  private usageStats: Map<string, UsageStats> = new Map();
+  private usageStats = new Map<string, UsageStats>();
 
   /** All known instances */
-  private knownInstances: Map<string, ClaudeInstance> = new Map();
+  private knownInstances = new Map<string, ClaudeInstance>();
 
   /** Action references by context ID for fetching fresh settings */
-  private actionContexts: Map<string, Action<ClaudeInstanceSettings>> = new Map();
+  private actionContexts = new Map<string, Action<ClaudeInstanceSettings>>();
 
   /** Kitty status polling timer */
   private kittyPollTimer: NodeJS.Timeout | null = null;
@@ -83,9 +94,11 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Called when an action instance appears on the Stream Deck
    */
-  override async onWillAppear(ev: WillAppearEvent<ClaudeInstanceSettings>): Promise<void> {
+  override async onWillAppear(
+    ev: WillAppearEvent<ClaudeInstanceSettings>
+  ): Promise<void> {
     const contextId = ev.action.id;
-    const settings = ev.payload.settings;
+    const { settings } = ev.payload;
 
     // Store action reference for fetching fresh settings
     this.actionContexts.set(contextId, ev.action);
@@ -103,21 +116,21 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     this.interactionHandlers.set(
       contextId,
       new InteractionHandler({
-        onSinglePress: () => this.handleSinglePress(contextId),
         onDoublePress: () => this.handleDoublePress(contextId),
         onHold: () => {
           // Clear hold progress ring when hold completes
           animController.clearHoldProgress();
           this.handleHold(contextId);
         },
+        onHoldCancel: () => {
+          // Clear hold progress ring when hold is cancelled
+          animController.clearHoldProgress();
+        },
         onHoldProgress: (progress: number) => {
           // Update animation controller with hold progress for visual ring
           animController.setHoldProgress(progress);
         },
-        onHoldCancel: () => {
-          // Clear hold progress ring when hold is cancelled
-          animController.clearHoldProgress();
-        }
+        onSinglePress: () => this.handleSinglePress(contextId),
       })
     );
 
@@ -130,7 +143,11 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     // Set initial display
     const sessionId = settings.sessionId as string | undefined;
     if (sessionId && this.instanceStates.has(sessionId)) {
-      this.updateDisplay(ev.action, this.instanceStates.get(sessionId)!, settings);
+      this.updateDisplay(
+        ev.action,
+        this.instanceStates.get(sessionId)!,
+        settings
+      );
     } else {
       this.updateDisplay(ev.action, "disconnected", settings);
     }
@@ -139,7 +156,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Called when an action instance disappears from the Stream Deck
    */
-  override async onWillDisappear(ev: WillDisappearEvent<ClaudeInstanceSettings>): Promise<void> {
+  override async onWillDisappear(
+    ev: WillDisappearEvent<ClaudeInstanceSettings>
+  ): Promise<void> {
     const contextId = ev.action.id;
 
     // Clean up interaction handler
@@ -169,7 +188,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Called when a key is pressed down
    */
-  override async onKeyDown(ev: KeyDownEvent<ClaudeInstanceSettings>): Promise<void> {
+  override async onKeyDown(
+    ev: KeyDownEvent<ClaudeInstanceSettings>
+  ): Promise<void> {
     const handler = this.interactionHandlers.get(ev.action.id);
     handler?.handleKeyDown();
   }
@@ -177,7 +198,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Called when a key is released
    */
-  override async onKeyUp(ev: KeyUpEvent<ClaudeInstanceSettings>): Promise<void> {
+  override async onKeyUp(
+    ev: KeyUpEvent<ClaudeInstanceSettings>
+  ): Promise<void> {
     const handler = this.interactionHandlers.get(ev.action.id);
     handler?.handleKeyUp();
   }
@@ -185,13 +208,19 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Called when settings are changed via Property Inspector
    */
-  override async onDidReceiveSettings(ev: DidReceiveSettingsEvent<ClaudeInstanceSettings>): Promise<void> {
-    const settings = ev.payload.settings;
+  override async onDidReceiveSettings(
+    ev: DidReceiveSettingsEvent<ClaudeInstanceSettings>
+  ): Promise<void> {
+    const { settings } = ev.payload;
     const sessionId = settings.sessionId as string | undefined;
 
     // Update display with new settings
     if (sessionId && this.instanceStates.has(sessionId)) {
-      this.updateDisplay(ev.action, this.instanceStates.get(sessionId)!, settings);
+      this.updateDisplay(
+        ev.action,
+        this.instanceStates.get(sessionId)!,
+        settings
+      );
     } else {
       this.updateDisplay(ev.action, "disconnected", settings);
     }
@@ -211,7 +240,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
     const projectFolder = settings.projectFolder as string | undefined;
-    logger.info(`Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}, Kitty available: ${this.kittyAvailable}`);
+    logger.info(
+      `Session ID: ${sessionId || "none"}, Project folder: ${projectFolder || "none"}, Kitty available: ${this.kittyAvailable}`
+    );
 
     // If session is attached, focus that terminal window
     if (sessionId) {
@@ -234,7 +265,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         // If still not available, try again after a short delay
         if (!this.kittyAvailable) {
           logger.info(`Kitty not detected yet, retrying in 1 second...`);
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise((resolve) => setTimeout(resolve, 1000));
           await this.pollKittyStatus();
         }
       } else {
@@ -249,9 +280,13 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       logger.info(`Launching Claude in project folder: ${projectFolder}`);
       const result = await openTerminalWithClaude(projectFolder);
       if (result.success) {
-        logger.info(`Launched Claude in ${projectFolder}, windowId: ${result.windowId}`);
+        logger.info(
+          `Launched Claude in ${projectFolder}, windowId: ${result.windowId}`
+        );
       } else {
-        logger.error(`Failed to launch Claude in ${projectFolder}: ${result.error}`);
+        logger.error(
+          `Failed to launch Claude in ${projectFolder}: ${result.error}`
+        );
       }
     } else {
       logger.info(`No session - launching new Claude window`);
@@ -270,7 +305,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   private async handleDoublePress(contextId: string): Promise<void> {
     logger.info(`[Action] handleDoublePress called for context: ${contextId}`);
     const action = this.actionContexts.get(contextId);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
@@ -289,7 +326,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   private async handleHold(contextId: string): Promise<void> {
     logger.info(`[Action] handleHold called for context: ${contextId}`);
     const action = this.actionContexts.get(contextId);
-    if (!action) return;
+    if (!action) {
+      return;
+    }
 
     const settings = await action.getSettings<ClaudeInstanceSettings>();
     const sessionId = settings.sessionId as string | undefined;
@@ -307,8 +346,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       try {
         await sendApproveSignal(sessionId, cwd);
         logger.info(`[Action] sendApproveSignal completed`);
-      } catch (err) {
-        logger.error(`[Action] sendApproveSignal failed: ${err}`);
+      } catch (error) {
+        logger.error(`[Action] sendApproveSignal failed: ${error}`);
       }
     } else {
       logger.info(`[Action] Hold ignored - not in permission state`);
@@ -338,7 +377,10 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
           animController.stop();
         }
         const totalTokens = usage
-          ? usage.inputTokens + usage.outputTokens + usage.cacheReadTokens + usage.cacheWriteTokens
+          ? usage.inputTokens +
+            usage.outputTokens +
+            usage.cacheReadTokens +
+            usage.cacheWriteTokens
           : 0;
         const tokenText = formatTokenCount(totalTokens);
         const dataUrl = IconGenerator.generateTokenDisplay(totalTokens, state);
@@ -387,7 +429,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
         // Update title with instance name or session ID prefix
         const instanceName = settings.instanceName as string | undefined;
-        const title = instanceName || (sessionId ? sessionId.substring(0, 6) : "---");
+        const title =
+          instanceName || (sessionId ? sessionId.slice(0, 6) : "---");
 
         if (action.isKey()) {
           action.setTitle(title);
@@ -418,8 +461,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         try {
           const message = JSON.parse(data.toString()) as WebSocketMessage;
           this.handleWebSocketMessage(message);
-        } catch (e) {
-          console.error("Failed to parse WebSocket message:", e);
+        } catch (error) {
+          console.error("Failed to parse WebSocket message:", error);
         }
       });
 
@@ -433,8 +476,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
         console.error("WebSocket error:", err);
         this.isConnecting = false;
       });
-    } catch (err) {
-      console.error("Failed to create WebSocket:", err);
+    } catch (error) {
+      console.error("Failed to create WebSocket:", error);
       this.isConnecting = false;
       this.scheduleReconnect();
     }
@@ -503,12 +546,12 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       // Update or create the known instance with metadata
       const existing = this.knownInstances.get(message.sessionId);
       this.knownInstances.set(message.sessionId, {
-        sessionId: message.sessionId,
-        state: message.state,
-        metadata: message.metadata,
         lastUpdate: Date.now(),
+        metadata: message.metadata,
         name: existing?.name,
-        source: message.source ?? "claude"
+        sessionId: message.sessionId,
+        source: message.source ?? "claude",
+        state: message.state,
       });
 
       // Update actions bound to this session
@@ -531,11 +574,20 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
    * Try to auto-assign a new instance to an unbound action with autoAssign enabled.
    * Priority: actions with matching projectFolder first, then actions without projectFolder.
    */
-  private async tryAutoAssign(sessionId: string, instanceCwd?: string): Promise<void> {
-    logger.info(`[AutoAssign] Checking auto-assign for session: ${sessionId}, cwd: ${instanceCwd}`);
+  private async tryAutoAssign(
+    sessionId: string,
+    instanceCwd?: string
+  ): Promise<void> {
+    logger.info(
+      `[AutoAssign] Checking auto-assign for session: ${sessionId}, cwd: ${instanceCwd}`
+    );
 
     // Collect all actions with autoAssign enabled and no sessionId
-    const eligibleActions: { action: Action<ClaudeInstanceSettings>; settings: ClaudeInstanceSettings; hasFolder: boolean }[] = [];
+    const eligibleActions: {
+      action: Action<ClaudeInstanceSettings>;
+      settings: ClaudeInstanceSettings;
+      hasFolder: boolean;
+    }[] = [];
 
     for (const action of this.actions) {
       const settings = await action.getSettings<ClaudeInstanceSettings>();
@@ -547,8 +599,8 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
       eligibleActions.push({
         action,
+        hasFolder: !!settings.projectFolder,
         settings,
-        hasFolder: !!settings.projectFolder
       });
     }
 
@@ -559,30 +611,55 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
 
     // Normalize paths for comparison (remove trailing slashes)
     const normalizePath = (p: string) => p.replace(/\/+$/, "");
-    const normalizedInstanceCwd = instanceCwd ? normalizePath(instanceCwd) : undefined;
+    const normalizedInstanceCwd = instanceCwd
+      ? normalizePath(instanceCwd)
+      : undefined;
 
     // First pass: find action with matching projectFolder
     for (const { action, settings } of eligibleActions) {
-      if (!settings.projectFolder) continue;
+      if (!settings.projectFolder) {
+        continue;
+      }
 
       const normalizedProjectFolder = normalizePath(settings.projectFolder);
-      if (normalizedInstanceCwd && normalizedProjectFolder === normalizedInstanceCwd) {
-        logger.info(`[AutoAssign] Matched by projectFolder: ${normalizedProjectFolder}`);
-        await this.assignInstanceToAction(action, sessionId, settings, instanceCwd);
+      if (
+        normalizedInstanceCwd &&
+        normalizedProjectFolder === normalizedInstanceCwd
+      ) {
+        logger.info(
+          `[AutoAssign] Matched by projectFolder: ${normalizedProjectFolder}`
+        );
+        await this.assignInstanceToAction(
+          action,
+          sessionId,
+          settings,
+          instanceCwd
+        );
         return;
       }
     }
 
     // Second pass: find action without projectFolder (takes any instance)
     for (const { action, settings } of eligibleActions) {
-      if (settings.projectFolder) continue;
+      if (settings.projectFolder) {
+        continue;
+      }
 
-      logger.info(`[AutoAssign] Assigning to action without projectFolder restriction`);
-      await this.assignInstanceToAction(action, sessionId, settings, instanceCwd);
+      logger.info(
+        `[AutoAssign] Assigning to action without projectFolder restriction`
+      );
+      await this.assignInstanceToAction(
+        action,
+        sessionId,
+        settings,
+        instanceCwd
+      );
       return;
     }
 
-    logger.info(`[AutoAssign] No matching action found for session ${sessionId}`);
+    logger.info(
+      `[AutoAssign] No matching action found for session ${sessionId}`
+    );
   }
 
   /**
@@ -596,7 +673,7 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   ): Promise<void> {
     const newSettings: ClaudeInstanceSettings = {
       ...currentSettings,
-      sessionId: sessionId
+      sessionId,
     };
 
     // Auto-fill instance name from cwd if not already set
@@ -607,7 +684,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
       }
     }
 
-    logger.info(`[AutoAssign] Assigning session ${sessionId} to action ${action.id}`);
+    logger.info(
+      `[AutoAssign] Assigning session ${sessionId} to action ${action.id}`
+    );
     await action.setSettings(newSettings);
 
     // Update display with the new state
@@ -622,7 +701,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     for (const action of this.actions) {
       action.getSettings<ClaudeInstanceSettings>().then((settings) => {
         const sessionId = settings.sessionId as string | undefined;
-        const state = sessionId ? this.instanceStates.get(sessionId) ?? "disconnected" : "disconnected";
+        const state = sessionId
+          ? (this.instanceStates.get(sessionId) ?? "disconnected")
+          : "disconnected";
         this.updateDisplay(action, state, settings);
       });
     }
@@ -662,12 +743,15 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
   /**
    * Send a command to the status server
    */
-  private sendCommand(sessionId: string, command: "cancel" | "approve" | "focus"): void {
+  private sendCommand(
+    sessionId: string,
+    command: "cancel" | "approve" | "focus"
+  ): void {
     if (this.wsConnection?.readyState === WebSocket.OPEN) {
       const message: CommandMessage = {
-        type: "command",
+        command,
         sessionId,
-        command
+        type: "command",
       };
       this.wsConnection.send(JSON.stringify(message));
     }
@@ -707,7 +791,9 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
     const available = await isKittyAvailable();
 
     if (this.kittyAvailable !== available) {
-      logger.info(`Kitty availability changed: ${this.kittyAvailable} -> ${available}`);
+      logger.info(
+        `Kitty availability changed: ${this.kittyAvailable} -> ${available}`
+      );
       this.kittyAvailable = available;
 
       // Update all animation controllers with new Kitty status
@@ -721,6 +807,6 @@ export class ClaudeInstanceAction extends SingletonAction<ClaudeInstanceSettings
    * Get list of known instances for Property Inspector
    */
   getKnownInstances(): ClaudeInstance[] {
-    return Array.from(this.knownInstances.values());
+    return [...this.knownInstances.values()];
   }
 }

@@ -147,7 +147,7 @@ Currently locked to Kitty-only. Create an adapter framework for:
 ## Quick Wins (Low Effort, High Impact)
 
 | Feature | Effort | Description |
-|---------|--------|-------------|
+| --- | --- | --- |
 | Error state wobble animation | 5 min | Add subtle shake to error state icon |
 | Disconnected state breathing | 5 min | Pulsing opacity for disconnected state |
 | Success flash | 10 min | Brief highlight on action completion |
@@ -199,21 +199,25 @@ Currently locked to Kitty-only. Create an adapter framework for:
 ## Implementation Roadmap
 
 ### Phase 1: Foundation
+
 1. Implement command execution (focus, cancel, approve)
 2. Add session persistence layer
 3. Refactor duplicate action code
 
 ### Phase 2: Platform Expansion
+
 1. Multi-terminal adapter framework
 2. Windows support
 3. Linux support
 
 ### Phase 3: Enhanced Monitoring
+
 1. Per-instance statistics dashboard
 2. Cost alerts and budgets
 3. Structured logging
 
 ### Phase 4: Integrations & Polish
+
 1. OpenAI/ChatGPT CLI integration
 2. Slack/Discord webhooks
 3. Customizable gesture mapping
@@ -223,13 +227,13 @@ Currently locked to Kitty-only. Create an adapter framework for:
 
 ## Key Files Reference
 
-| File | Lines | Purpose |
-|------|-------|---------|
-| `src/server/status-server.ts` | 432 | HTTP+WebSocket server |
-| `src/server/instance-manager.ts` | 231 | Instance state tracking |
-| `src/actions/claude-instance-action.ts` | 714 | Claude Stream Deck action |
-| `src/actions/gemini-instance-action.ts` | 731 | Gemini Stream Deck action |
-| `src/icons/icon-generator.ts` | 709 | SVG icon generation |
-| `src/utils/kitty-remote.ts` | 778 | Kitty terminal control |
-| `src/utils/interaction-handler.ts` | 163 | Gesture detection |
-| `hooks/status-reporter.sh` | ~200 | Claude Code hook script |
+| File                                    | Lines | Purpose                   |
+| --------------------------------------- | ----- | ------------------------- |
+| `src/server/status-server.ts`           | 432   | HTTP+WebSocket server     |
+| `src/server/instance-manager.ts`        | 231   | Instance state tracking   |
+| `src/actions/claude-instance-action.ts` | 714   | Claude Stream Deck action |
+| `src/actions/gemini-instance-action.ts` | 731   | Gemini Stream Deck action |
+| `src/icons/icon-generator.ts`           | 709   | SVG icon generation       |
+| `src/utils/kitty-remote.ts`             | 778   | Kitty terminal control    |
+| `src/utils/interaction-handler.ts`      | 163   | Gesture detection         |
+| `hooks/status-reporter.sh`              | ~200  | Claude Code hook script   |

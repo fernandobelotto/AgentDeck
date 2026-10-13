@@ -1,28 +1,29 @@
 {
   "name": "agentdeck",
   "version": "1.0.0",
-  "packageManager": "pnpm@10.34.5",
   "description": "Stream Deck plugin to monitor and control AI agent instances",
-  "main": "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
+  "keywords": [
+    "ai-agents",
+    "claude",
+    "claude-code",
+    "gemini",
+    "plugin",
+    "streamdeck"
+  ],
+  "license": "MIT",
+  "author": "AgentDeck",
   "type": "module",
+  "main": "com.agentdeck.plugin.sdPlugin/bin/plugin.js",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "link": "streamdeck link com.agentdeck.plugin.sdPlugin",
     "restart": "streamdeck restart com.agentdeck.plugin",
     "preview": "open preview.html",
-    "icons": "node scripts/generate-icons.js"
+    "icons": "node scripts/generate-icons.js",
+    "lint": "ultracite check",
+    "format": "ultracite fix"
   },
-  "keywords": [
-    "streamdeck",
-    "claude",
-    "claude-code",
-    "gemini",
-    "ai-agents",
-    "plugin"
-  ],
-  "author": "AgentDeck",
-  "license": "MIT",
   "dependencies": {
     "@elgato/streamdeck": "^1.2.0",
     "ws": "^8.18.0"
@@ -33,9 +34,13 @@
     "@rollup/plugin-typescript": "^12.1.2",
     "@types/node": "^22.10.5",
     "@types/ws": "^8.5.13",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.87.0",
     "rollup": "^4.29.2",
     "sharp": "^0.34.5",
     "tslib": "^2.8.1",
-    "typescript": "^5.7.3"
-  }
+    "typescript": "^5.7.3",
+    "ultracite": "8.0.0"
+  },
+  "packageManager": "pnpm@10.34.5"
 }

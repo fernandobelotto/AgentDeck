@@ -1,7 +1,8 @@
-import { EventEmitter } from "events";
-import * as fs from "fs";
-import * as path from "path";
-import { homedir } from "os";
+import { EventEmitter } from "node:events";
+import * as fs from "node:fs";
+import { homedir } from "node:os";
+import * as path from "node:path";
+
 import type { UsageStats } from "./types";
 
 interface ScanState {
@@ -23,9 +24,9 @@ interface ParsedUsage {
  * Uses incremental parsing to avoid re-reading entire files
  */
 export class LogScanner extends EventEmitter {
-  private scanStates: Map<string, ScanState> = new Map();
-  private watchers: Map<string, fs.FSWatcher> = new Map();
-  private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private scanStates = new Map<string, ScanState>();
+  private watchers = new Map<string, fs.FSWatcher>();
+  private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private projectsDir: string;
 
   constructor() {
@@ -108,7 +109,7 @@ export class LogScanner extends EventEmitter {
    */
   private getLogFilePath(sessionId: string, cwd: string): string | null {
     // Try encoded cwd path (e.g., /Users/foo/bar -> -Users-foo-bar)
-    const encodedCwd = cwd.replace(/\//g, "-").replace(/^-/, "-");
+    const encodedCwd = cwd.replaceAll("/", "-").replace(/^-/, "-");
     const projectDir = path.join(this.projectsDir, encodedCwd);
     const sessionFile = path.join(projectDir, `${sessionId}.jsonl`);
 
@@ -120,7 +121,11 @@ export class LogScanner extends EventEmitter {
     try {
       const dirs = fs.readdirSync(this.projectsDir);
       for (const dir of dirs) {
-        const candidatePath = path.join(this.projectsDir, dir, `${sessionId}.jsonl`);
+        const candidatePath = path.join(
+          this.projectsDir,
+          dir,
+          `${sessionId}.jsonl`
+        );
         if (fs.existsSync(candidatePath)) {
           return candidatePath;
         }
@@ -154,7 +159,9 @@ export class LogScanner extends EventEmitter {
    */
   private scanFile(sessionId: string): void {
     const state = this.scanStates.get(sessionId);
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     try {
       const stats = fs.statSync(state.filePath);
@@ -177,15 +184,15 @@ export class LogScanner extends EventEmitter {
       fs.readSync(fd, buffer, 0, newSize, state.lastPosition);
       fs.closeSync(fd);
 
-      const newContent = buffer.toString("utf8");
+      const newContent = buffer.toString("utf-8");
       const lines = newContent.split("\n").filter((line) => line.trim());
 
-      let totalUsage: ParsedUsage = {
-        inputTokens: 0,
-        outputTokens: 0,
+      const totalUsage: ParsedUsage = {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
+        inputTokens: 0,
         model: "",
+        outputTokens: 0,
       };
 
       for (const line of lines) {
@@ -244,11 +251,11 @@ export class LogScanner extends EventEmitter {
     }
 
     return {
-      inputTokens: (usage.input_tokens as number) || 0,
-      outputTokens: (usage.output_tokens as number) || 0,
       cacheReadTokens: (usage.cache_read_input_tokens as number) || 0,
       cacheWriteTokens: (usage.cache_creation_input_tokens as number) || 0,
+      inputTokens: (usage.input_tokens as number) || 0,
       model: (message.model as string) || "",
+      outputTokens: (usage.output_tokens as number) || 0,
     };
   }
 
@@ -263,17 +270,17 @@ export class LogScanner extends EventEmitter {
     }
 
     try {
-      const content = fs.readFileSync(filePath, "utf8");
+      const content = fs.readFileSync(filePath, "utf-8");
       const lines = content.split("\n").filter((line) => line.trim());
 
-      let totalUsage: UsageStats = {
-        inputTokens: 0,
-        outputTokens: 0,
+      const totalUsage: UsageStats = {
         cacheReadTokens: 0,
         cacheWriteTokens: 0,
-        totalCost: 0,
-        model: "",
+        inputTokens: 0,
         lastUpdate: Date.now(),
+        model: "",
+        outputTokens: 0,
+        totalCost: 0,
       };
 
       for (const line of lines) {

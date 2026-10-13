@@ -1,8 +1,9 @@
-import { EventEmitter } from "events";
-import * as fs from "fs";
-import * as path from "path";
-import { homedir } from "os";
-import * as crypto from "crypto";
+import * as crypto from "node:crypto";
+import { EventEmitter } from "node:events";
+import * as fs from "node:fs";
+import { homedir } from "node:os";
+import * as path from "node:path";
+
 import type { UsageStats } from "./types";
 
 interface ScanState {
@@ -50,9 +51,9 @@ interface GeminiConversationRecord {
  * Session files are stored at: ~/.gemini/tmp/<project_hash>/chats/session-*.json
  */
 export class GeminiLogScanner extends EventEmitter {
-  private scanStates: Map<string, ScanState> = new Map();
-  private watchers: Map<string, fs.FSWatcher> = new Map();
-  private debounceTimers: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private scanStates = new Map<string, ScanState>();
+  private watchers = new Map<string, fs.FSWatcher>();
+  private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
   private geminiDir: string;
 
   constructor() {
@@ -85,8 +86,8 @@ export class GeminiLogScanner extends EventEmitter {
       const stats = fs.statSync(filePath);
       this.scanStates.set(sessionId, {
         filePath,
-        lastSize: stats.size,
         lastParsedMessageCount: 0,
+        lastSize: stats.size,
       });
 
       // Do initial scan
@@ -146,14 +147,18 @@ export class GeminiLogScanner extends EventEmitter {
     const chatsDir = path.join(this.geminiDir, projectHash, "chats");
 
     // Look for session file by sessionId prefix in filename
-    const sessionPrefix = sessionId.substring(0, 8);
+    const sessionPrefix = sessionId.slice(0, 8);
 
     try {
       if (fs.existsSync(chatsDir)) {
         const files = fs.readdirSync(chatsDir);
         for (const file of files) {
           // Match session-YYYY-MM-DDTHH-MM-<session_id_first_8_chars>.json
-          if (file.startsWith("session-") && file.includes(sessionPrefix) && file.endsWith(".json")) {
+          if (
+            file.startsWith("session-") &&
+            file.includes(sessionPrefix) &&
+            file.endsWith(".json")
+          ) {
             return path.join(chatsDir, file);
           }
         }
@@ -163,7 +168,7 @@ export class GeminiLogScanner extends EventEmitter {
           if (file.startsWith("session-") && file.endsWith(".json")) {
             const filePath = path.join(chatsDir, file);
             try {
-              const content = fs.readFileSync(filePath, "utf8");
+              const content = fs.readFileSync(filePath, "utf-8");
               const record = JSON.parse(content) as GeminiConversationRecord;
               if (record.sessionId === sessionId) {
                 return filePath;
@@ -190,8 +195,10 @@ export class GeminiLogScanner extends EventEmitter {
               if (file.startsWith("session-") && file.endsWith(".json")) {
                 const filePath = path.join(chatsPath, file);
                 try {
-                  const content = fs.readFileSync(filePath, "utf8");
-                  const record = JSON.parse(content) as GeminiConversationRecord;
+                  const content = fs.readFileSync(filePath, "utf-8");
+                  const record = JSON.parse(
+                    content
+                  ) as GeminiConversationRecord;
                   if (record.sessionId === sessionId) {
                     return filePath;
                   }
@@ -232,7 +239,9 @@ export class GeminiLogScanner extends EventEmitter {
    */
   private scanFile(sessionId: string): void {
     const state = this.scanStates.get(sessionId);
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     try {
       const stats = fs.statSync(state.filePath);
@@ -243,17 +252,17 @@ export class GeminiLogScanner extends EventEmitter {
       }
 
       // Parse the JSON file
-      const content = fs.readFileSync(state.filePath, "utf8");
+      const content = fs.readFileSync(state.filePath, "utf-8");
       const record = JSON.parse(content) as GeminiConversationRecord;
 
       // Only process new messages
       const newMessages = record.messages.slice(state.lastParsedMessageCount);
 
-      let totalUsage: ParsedUsage = {
-        inputTokens: 0,
-        outputTokens: 0,
+      const totalUsage: ParsedUsage = {
         cacheReadTokens: 0,
+        inputTokens: 0,
         model: "",
+        outputTokens: 0,
       };
 
       for (const message of newMessages) {
@@ -273,7 +282,11 @@ export class GeminiLogScanner extends EventEmitter {
       state.lastParsedMessageCount = record.messages.length;
 
       // Emit if we found usage data
-      if (totalUsage.inputTokens > 0 || totalUsage.outputTokens > 0 || totalUsage.cacheReadTokens > 0) {
+      if (
+        totalUsage.inputTokens > 0 ||
+        totalUsage.outputTokens > 0 ||
+        totalUsage.cacheReadTokens > 0
+      ) {
         this.emit("usage", sessionId, totalUsage);
       }
     } catch {
@@ -291,10 +304,10 @@ export class GeminiLogScanner extends EventEmitter {
     }
 
     return {
-      inputTokens: message.tokens.input || 0,
-      outputTokens: message.tokens.output || 0,
       cacheReadTokens: message.tokens.cached || 0,
+      inputTokens: message.tokens.input || 0,
       model: message.model || "",
+      outputTokens: message.tokens.output || 0,
     };
   }
 
@@ -309,17 +322,17 @@ export class GeminiLogScanner extends EventEmitter {
     }
 
     try {
-      const content = fs.readFileSync(filePath, "utf8");
+      const content = fs.readFileSync(filePath, "utf-8");
       const record = JSON.parse(content) as GeminiConversationRecord;
 
       const totalUsage: UsageStats = {
-        inputTokens: 0,
-        outputTokens: 0,
         cacheReadTokens: 0,
         cacheWriteTokens: 0, // Gemini doesn't track cache write separately
-        totalCost: 0,
-        model: "",
+        inputTokens: 0,
         lastUpdate: Date.now(),
+        model: "",
+        outputTokens: 0,
+        totalCost: 0,
       };
 
       for (const message of record.messages) {

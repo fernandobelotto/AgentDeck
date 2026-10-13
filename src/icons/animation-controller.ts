@@ -1,5 +1,5 @@
-import { IconGenerator } from "./icon-generator.js";
 import type { ClaudeState, InstanceSource } from "../server/types.js";
+import { IconGenerator } from "./icon-generator.js";
 
 export type FrameUpdateCallback = (dataUrl: string) => void;
 
@@ -18,7 +18,7 @@ export class AnimationController {
 
   // State transition properties
   private previousState: ClaudeState | null = null;
-  private transitionProgress: number = 1;  // 1 = no transition, 0 = start of transition
+  private transitionProgress: number = 1; // 1 = no transition, 0 = start of transition
   private inTransition: boolean = false;
   private transitionIntervalId: NodeJS.Timeout | null = null;
 
@@ -29,7 +29,10 @@ export class AnimationController {
   /** Number of frames for state transitions (~333ms at 12fps) */
   private static readonly TRANSITION_FRAMES = 4;
 
-  constructor(onFrameUpdate: FrameUpdateCallback, source: InstanceSource = "claude") {
+  constructor(
+    onFrameUpdate: FrameUpdateCallback,
+    source: InstanceSource = "claude"
+  ) {
     this.onFrameUpdate = onFrameUpdate;
     this.source = source;
   }
@@ -110,7 +113,8 @@ export class AnimationController {
 
     this.transitionIntervalId = setInterval(() => {
       transitionFrame++;
-      this.transitionProgress = transitionFrame / AnimationController.TRANSITION_FRAMES;
+      this.transitionProgress =
+        transitionFrame / AnimationController.TRANSITION_FRAMES;
 
       if (transitionFrame >= AnimationController.TRANSITION_FRAMES) {
         // Transition complete
@@ -193,7 +197,13 @@ export class AnimationController {
         this.holdProgress
       );
     } else {
-      dataUrl = IconGenerator.generateDataUrl(this.currentState, this.currentFrame, this.kittyAvailable, this.source, this.holdProgress);
+      dataUrl = IconGenerator.generateDataUrl(
+        this.currentState,
+        this.currentFrame,
+        this.kittyAvailable,
+        this.source,
+        this.holdProgress
+      );
     }
 
     this.onFrameUpdate(dataUrl);
